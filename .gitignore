@@ -5,3 +5,6 @@ dist
 
 /generated/prisma
 prisma/*.db
+
+# local secrets
+.ryusen/secret/
