@@ -1,4 +1,7 @@
-import { PrismaClient, type BotSession as PrismaBotSession } from "@prisma/client";
+import {
+  PrismaClient,
+  type BotSession as PrismaBotSession,
+} from "@prisma/client";
 import type { Bot, BotSession } from "../../../core/bot/bot-session";
 import type { BotSessionRepository } from "../../../core/port/bot-session-repository";
 
@@ -30,7 +33,11 @@ function toSession(record: PrismaBotSession): BotSession {
 export class PrismaBotSessionRepository implements BotSessionRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot> {
+  async createBot(input: {
+    name: string;
+    steamId: string;
+    accountName: string;
+  }): Promise<Bot> {
     const record = await this.prisma.bot.create({
       data: input,
       select: {
@@ -87,7 +94,9 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
   }
 
   async findSessionByBotId(botId: string): Promise<BotSession | null> {
-    const record = await this.prisma.botSession.findUnique({ where: { botId } });
+    const record = await this.prisma.botSession.findUnique({
+      where: { botId },
+    });
     return record ? toSession(record) : null;
   }
 

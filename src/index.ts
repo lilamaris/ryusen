@@ -128,7 +128,7 @@ bot
     const password = await promptText("Steam password: ");
     const prompts = buildPrompts();
 
-    await botSessionService.addBotWithAuthentication({
+    await botSessionService.addOrAuthenticateBot({
       name: options.name,
       steamId: options.steamId ?? "",
       accountName: options.accountName ?? "",

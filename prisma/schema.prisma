@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model inventory_items {
+  id          BigInt   @id @default(autoincrement())
+  steam_id64  String
+  item_key    String
+  amount      Int      @default(1)
+  raw_payload Json
+  fetched_at  DateTime @default(now())
+
+  @@unique([steam_id64, item_key])
+  @@index([steam_id64])
+}
+
+model steam_accounts {
+  user_id    String   @id
+  steam_id64 String   @unique
+  linked_at  DateTime @default(now())
+}
+
 model Bot {
   id          String     @id @default(cuid())
   name        String     @unique

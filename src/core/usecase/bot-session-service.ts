@@ -12,24 +12,31 @@ export class BotSessionService {
     await this.repository.createBot(input);
   }
 
-  async addBotWithAuthentication(input: {
+  async addOrAuthenticateBot(input: {
     name: string;
     steamId: string;
     accountName: string;
     password: string;
     prompts: SteamGuardPrompts;
   }): Promise<void> {
-    const bot = await this.repository.createBot({
-      name: input.name,
-      steamId: input.steamId,
-      accountName: input.accountName,
-    });
-
     const authResult = await this.steamAuthGateway.authenticateWithCredentials({
       accountName: input.accountName,
       password: input.password,
       prompts: input.prompts,
     });
+
+    let bot = await this.repository.findBotByName(input.name);
+    if (bot) {
+      if (bot.steamId !== input.steamId || bot.accountName !== input.accountName) {
+        throw new Error(`Bot already exists with different steamId/accountName: ${input.name}`);
+      }
+    } else {
+      bot = await this.repository.createBot({
+        name: input.name,
+        steamId: input.steamId,
+        accountName: input.accountName,
+      });
+    }
 
     await this.repository.upsertSession({
       botId: bot.id,
