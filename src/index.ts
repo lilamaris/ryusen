@@ -1,10 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 import { Command } from "commander";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
+import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-bot-session-repository";
+import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
 import {
   SteamInventoryProvider,
   type SteamInventoryQuery,
 } from "./adapter/steam/steam-inventory-provider";
-import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-bot-session-repository";
 import { BotSessionService } from "./core/usecase/bot-session-service";
 import { runCli } from "./presentation/cli";
 import { runTui } from "./presentation/tui";
@@ -19,16 +22,17 @@ type QueryOptions = {
 type BotRegisterOptions = {
   name: string;
   steamId: string;
+  accountName: string;
 };
 
-type BotConnectOptions = {
+type BotAuthOptions = {
   name: string;
-  sessionToken: string;
-  expiresAt: string;
+  steamId?: string;
+  accountName?: string;
 };
 
 type BotCheckOptions = {
-  name: string;
+  name?: string;
 };
 
 function getQueryOptions(options: QueryOptions): SteamInventoryQuery {
@@ -43,19 +47,31 @@ function getQueryOptions(options: QueryOptions): SteamInventoryQuery {
   };
 }
 
-function parseExpiresAt(value: string): Date {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error("--expires-at must be a valid ISO datetime (example: 2026-03-01T12:00:00Z)");
+async function promptText(question: string): Promise<string> {
+  const rl = createInterface({ input, output });
+  try {
+    const answer = await rl.question(question);
+    return answer.trim();
+  } finally {
+    rl.close();
   }
-  return parsed;
+}
+
+function buildPrompts() {
+  return {
+    requestGuardCode: async (message: string): Promise<string> => promptText(`${message}: `),
+    notifyPendingConfirmation: async (message: string): Promise<void> => {
+      await promptText(`${message} `);
+    },
+  };
 }
 
 const program = new Command();
 const steamProvider = new SteamInventoryProvider();
+const steamAuthGateway = new SteamSessionAuthGateway();
 const prisma = new PrismaClient();
 const botSessionRepository = new PrismaBotSessionRepository(prisma);
-const botSessionService = new BotSessionService(botSessionRepository);
+const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway);
 
 program
   .name("ryusen")
@@ -93,49 +109,96 @@ bot
   .command("register")
   .requiredOption("--name <name>", "Bot name")
   .requiredOption("--steam-id <steamId>", "SteamID64")
+  .requiredOption("--account-name <accountName>", "Steam login account name")
   .action(async (options: BotRegisterOptions) => {
-    await botSessionService.registerBot({ name: options.name, steamId: options.steamId });
+    await botSessionService.registerBot({
+      name: options.name,
+      steamId: options.steamId,
+      accountName: options.accountName,
+    });
     console.log(`Bot registered: ${options.name}`);
   });
 
 bot
-  .command("connect")
+  .command("add")
   .requiredOption("--name <name>", "Bot name")
-  .requiredOption("--session-token <token>", "Session token/cookie value")
-  .requiredOption("--expires-at <isoDate>", "Session expiry as ISO datetime")
-  .action(async (options: BotConnectOptions) => {
-    await botSessionService.connectBot({
-      botName: options.name,
-      sessionToken: options.sessionToken,
-      expiresAt: parseExpiresAt(options.expiresAt),
+  .requiredOption("--steam-id <steamId>", "SteamID64")
+  .requiredOption("--account-name <accountName>", "Steam login account name")
+  .action(async (options: BotAuthOptions) => {
+    const password = await promptText("Steam password: ");
+    const prompts = buildPrompts();
+
+    await botSessionService.addBotWithAuthentication({
+      name: options.name,
+      steamId: options.steamId ?? "",
+      accountName: options.accountName ?? "",
+      password,
+      prompts,
     });
-    console.log(`Session saved for bot: ${options.name}`);
+
+    console.log(`Bot added and authenticated: ${options.name}`);
+  });
+
+bot
+  .command("auth")
+  .requiredOption("--name <name>", "Bot name")
+  .action(async (options: BotAuthOptions) => {
+    const password = await promptText("Steam password: ");
+    const prompts = buildPrompts();
+
+    await botSessionService.reauthenticateBot({
+      botName: options.name,
+      password,
+      prompts,
+    });
+
+    console.log(`Bot session refreshed: ${options.name}`);
   });
 
 bot
   .command("session-check")
-  .requiredOption("--name <name>", "Bot name")
+  .option("--name <name>", "Bot name (omit to check all bots)")
   .action(async (options: BotCheckOptions) => {
-    const status = await botSessionService.checkBotSession(options.name);
-    console.table([
-      {
+    if (options.name) {
+      const status = await botSessionService.checkBotSession(options.name);
+      console.table([
+        {
+          bot: status.bot.name,
+          steamId: status.bot.steamId,
+          accountName: status.bot.accountName,
+          hasSession: status.hasSession,
+          isValid: status.isValid,
+          expiresAt: status.expiresAt?.toISOString() ?? null,
+          lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
+        },
+      ]);
+      return;
+    }
+
+    const statuses = await botSessionService.listBotSessions();
+    console.table(
+      statuses.map((status) => ({
         bot: status.bot.name,
         steamId: status.bot.steamId,
+        accountName: status.bot.accountName,
         hasSession: status.hasSession,
         isValid: status.isValid,
         expiresAt: status.expiresAt?.toISOString() ?? null,
         lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
-      },
-    ]);
+      }))
+    );
   });
 
-program.parseAsync(process.argv).catch((error: unknown) => {
-  if (error instanceof Error) {
-    console.error(error.message);
-  } else {
-    console.error(error);
-  }
-  process.exit(1);
-}).finally(async () => {
-  await prisma.$disconnect();
-});
+program
+  .parseAsync(process.argv)
+  .catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(error);
+    }
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

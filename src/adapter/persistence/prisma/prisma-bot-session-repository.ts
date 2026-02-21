@@ -1,12 +1,20 @@
-import { PrismaClient, type Bot as PrismaBot, type BotSession as PrismaBotSession } from "@prisma/client";
+import { PrismaClient, type BotSession as PrismaBotSession } from "@prisma/client";
 import type { Bot, BotSession } from "../../../core/bot/bot-session";
 import type { BotSessionRepository } from "../../../core/port/bot-session-repository";
 
-function toBot(record: PrismaBot): Bot {
+type BotRecord = {
+  id: string;
+  name: string;
+  steamId: string;
+  accountName: string;
+};
+
+function toBot(record: BotRecord): Bot {
   return {
     id: record.id,
     name: record.name,
     steamId: record.steamId,
+    accountName: record.accountName,
   };
 }
 
@@ -22,14 +30,43 @@ function toSession(record: PrismaBotSession): BotSession {
 export class PrismaBotSessionRepository implements BotSessionRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async createBot(input: { name: string; steamId: string }): Promise<Bot> {
-    const record = await this.prisma.bot.create({ data: input });
+  async createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot> {
+    const record = await this.prisma.bot.create({
+      data: input,
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+      },
+    });
     return toBot(record);
   }
 
   async findBotByName(name: string): Promise<Bot | null> {
-    const record = await this.prisma.bot.findUnique({ where: { name } });
+    const record = await this.prisma.bot.findUnique({
+      where: { name },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+      },
+    });
     return record ? toBot(record) : null;
+  }
+
+  async listBots(): Promise<Bot[]> {
+    const records = await this.prisma.bot.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+      },
+    });
+    return records.map(toBot);
   }
 
   async upsertSession(input: {

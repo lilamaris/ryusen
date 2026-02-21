@@ -4,6 +4,7 @@
 
 - Separate core inventory contracts from infrastructure implementation and presentation entrypoints.
 - Persist bot/session state so runtime flows can reuse valid sessions instead of relying on stateless calls.
+- Support interactive Steam re-authentication with OTP prompts for new bot onboarding and session refresh.
 
 ## Directory Layout
 
@@ -14,11 +15,14 @@
   - Bot and bot-session domain types.
 - `src/core/port/bot-session-repository.ts`
   - Persistence port for bot/session lifecycle.
+- `src/core/port/steam-auth-gateway.ts`
+  - Auth gateway port for Steam credential + guard-code login.
 - `src/core/usecase/bot-session-service.ts`
-  - Use case for `bot register`, `bot connect`, and `bot session-check`.
+  - Use case for bot register, add+authenticate, re-authenticate, and session status checks.
 - `src/adapter/steam/steam-inventory-provider.ts`
-  - Contains `SteamInventoryProvider` implementation for Steam Web inventory API.
-  - Contains Steam-specific query/type mapping (`SteamInventoryQuery`, paging response mapping).
+  - `SteamInventoryProvider` implementation for Steam Web inventory API.
+- `src/adapter/steam/steam-auth-gateway.ts`
+  - `SteamSessionAuthGateway` implementation using `steam-session`.
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma implementation of bot/session repository port.
 - `src/presentation/`
@@ -27,6 +31,7 @@
   - `web.ts`: web UI renderer.
 - `src/index.ts`
   - Composition root. Wires adapters to use cases and presentation commands.
+  - Hosts interactive CLI prompt flow for password/OTP input.
 
 ## Dependency Direction
 
@@ -38,10 +43,21 @@
 ## Persistence Model
 
 - `Bot`
-  - Unique bot identity (`name`, `steamId`).
+  - Unique bot identity (`name`, `steamId`, `accountName`).
 - `BotSession`
   - One current session per bot (`botId` unique).
   - Stores `sessionToken`, `expiresAt`, `lastCheckedAt`.
+
+## Session Management Flow
+
+- `bot add`
+  - Creates a bot record and immediately authenticates via Steam credentials.
+  - If Steam Guard is required, OTP or confirmation prompt is requested interactively.
+- `bot auth`
+  - Re-authenticates existing bot using stored `accountName` and prompted password/OTP.
+  - Refreshes persisted session data.
+- `bot session-check`
+  - Returns current validity of one bot or all bots using persisted session expiry metadata.
 
 ## Update Policy
 
@@ -50,5 +66,5 @@ If code changes meaningfully (boundaries, contracts, flows, domain semantics), u
 
 ## Notes
 
-- Current adapter path is `adapter/steam`.
+- Current Steam adapter path is `adapter/steam`.
 - If more providers are added later, place each provider implementation under `src/adapter/<provider>/`.

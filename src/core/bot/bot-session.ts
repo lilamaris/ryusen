@@ -2,6 +2,7 @@ export type Bot = {
   id: string;
   name: string;
   steamId: string;
+  accountName: string;
 };
 
 export type BotSession = {
