@@ -64,6 +64,10 @@ class FakeRepository implements BotSessionRepository {
   setBotTradeSecretsBySteamId(): Promise<Bot> {
     return Promise.reject(new Error("not used"));
   }
+
+  setBotOnboardingState(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
 }
 
 void test("resolveByBotName returns skip reason when bot not found", async () => {

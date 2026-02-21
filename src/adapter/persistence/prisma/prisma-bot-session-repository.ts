@@ -3,7 +3,7 @@ import {
   type BotSession as PrismaBotSession,
 } from "@prisma/client";
 import { debugLog } from "../../../debug";
-import type { Bot, BotSession } from "../../../core/bot/bot-session";
+import type { Bot, BotOnboardingState, BotSession } from "../../../core/bot/bot-session";
 import type { BotSessionRepository } from "../../../core/port/bot-session-repository";
 
 type BotRecord = {
@@ -14,6 +14,10 @@ type BotRecord = {
   tradeToken: string | null;
   sharedSecret: string | null;
   identitySecret: string | null;
+  revocationCode: string | null;
+  onboardingState: BotOnboardingState;
+  onboardingStartedAt: Date | null;
+  tradeLockedUntil: Date | null;
 };
 
 function toBot(record: BotRecord): Bot {
@@ -25,6 +29,10 @@ function toBot(record: BotRecord): Bot {
     tradeToken: record.tradeToken,
     sharedSecret: record.sharedSecret,
     identitySecret: record.identitySecret,
+    revocationCode: record.revocationCode,
+    onboardingState: record.onboardingState,
+    onboardingStartedAt: record.onboardingStartedAt,
+    tradeLockedUntil: record.tradeLockedUntil,
   };
 }
 
@@ -61,6 +69,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "createBot:done", { id: record.id, name: record.name });
@@ -79,6 +91,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     return record ? toBot(record) : null;
@@ -96,6 +112,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     return record ? toBot(record) : null;
@@ -121,6 +141,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "updateBotIdentity:done", { botId: input.botId });
@@ -139,6 +163,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "listBots:done", { count: records.length });
@@ -157,6 +185,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
         session: true,
       },
     });
@@ -225,6 +257,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "setBotTradeToken:done", { botName });
@@ -233,7 +269,14 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
 
   async setBotTradeSecretsBySteamId(
     steamId: string,
-    secrets: { sharedSecret: string | null; identitySecret: string | null }
+    secrets: {
+      sharedSecret: string | null;
+      identitySecret: string | null;
+      revocationCode?: string | null;
+      onboardingState?: BotOnboardingState;
+      onboardingStartedAt?: Date | null;
+      tradeLockedUntil?: Date | null;
+    }
   ): Promise<Bot> {
     debugLog("PrismaBotSessionRepository", "setBotTradeSecretsBySteamId:start", {
       steamId,
@@ -245,6 +288,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
       data: {
         sharedSecret: secrets.sharedSecret,
         identitySecret: secrets.identitySecret,
+        ...(secrets.revocationCode !== undefined ? { revocationCode: secrets.revocationCode } : {}),
+        ...(secrets.onboardingState !== undefined ? { onboardingState: secrets.onboardingState } : {}),
+        ...(secrets.onboardingStartedAt !== undefined ? { onboardingStartedAt: secrets.onboardingStartedAt } : {}),
+        ...(secrets.tradeLockedUntil !== undefined ? { tradeLockedUntil: secrets.tradeLockedUntil } : {}),
       },
       select: {
         id: true,
@@ -254,9 +301,46 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         tradeToken: true,
         sharedSecret: true,
         identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "setBotTradeSecretsBySteamId:done", { steamId });
+    return toBot(record);
+  }
+
+  async setBotOnboardingState(input: {
+    botId: string;
+    onboardingState: BotOnboardingState;
+    tradeLockedUntil: Date | null;
+  }): Promise<Bot> {
+    debugLog("PrismaBotSessionRepository", "setBotOnboardingState:start", input);
+    const record = await this.prisma.bot.update({
+      where: { id: input.botId },
+      data: {
+        onboardingState: input.onboardingState,
+        tradeLockedUntil: input.tradeLockedUntil,
+      },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
+        revocationCode: true,
+        onboardingState: true,
+        onboardingStartedAt: true,
+        tradeLockedUntil: true,
+      },
+    });
+    debugLog("PrismaBotSessionRepository", "setBotOnboardingState:done", {
+      botId: input.botId,
+      onboardingState: input.onboardingState,
+    });
     return toBot(record);
   }
 }

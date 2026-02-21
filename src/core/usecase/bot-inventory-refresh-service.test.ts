@@ -52,6 +52,10 @@ class FakeSessionRepository implements BotSessionRepository {
   setBotTradeSecretsBySteamId(): Promise<Bot> {
     return Promise.reject(new Error("not used"));
   }
+
+  setBotOnboardingState(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
 }
 
 class FakeInventoryProvider implements InventoryProvider<InventoryQuery> {

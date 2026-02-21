@@ -1,6 +1,7 @@
-import type { Bot, BotSessionStatus } from "../bot/bot-session";
+import { getBotTradeReadiness, type Bot, type BotOnboardingState, type BotSessionStatus } from "../bot/bot-session";
 import type { BotSessionRepository } from "../port/bot-session-repository";
 import type { SteamAuthGateway, SteamGuardPrompts } from "../port/steam-auth-gateway";
+import type { SteamMobileAuthGateway } from "../port/steam-mobile-auth-gateway";
 import type { DebugLogger } from "./debug-logger";
 
 export type BotDeclarationAccount = {
@@ -38,10 +39,20 @@ export type BotSecretSyncResult = {
   }>;
 };
 
+export type BotAuthenticatorBootstrapResult = {
+  botName: string;
+  steamId: string;
+  onboardingState: BotOnboardingState;
+  tradable: boolean;
+  tradeLockedUntil: Date;
+  revocationCode: string;
+};
+
 export class BotSessionService {
   constructor(
     private readonly repository: BotSessionRepository,
     private readonly steamAuthGateway: SteamAuthGateway,
+    private readonly steamMobileAuthGateway?: SteamMobileAuthGateway,
     private readonly debugLogger?: DebugLogger
   ) {}
 
@@ -103,6 +114,15 @@ export class BotSessionService {
         accountName: input.accountName,
       });
       this.debug("addOrAuthenticateBot:createdBot", { name: input.name });
+    }
+
+    if (!bot.sharedSecret && this.steamMobileAuthGateway) {
+      await this.bootstrapTradeAuthenticator({
+        botName: bot.name,
+        password: input.password,
+        prompts: input.prompts,
+      });
+      bot = (await this.repository.findBotBySteamId(input.steamId)) ?? bot;
     }
 
     await this.repository.upsertSession({
@@ -169,6 +189,48 @@ export class BotSessionService {
     this.debug("setTradeToken:done", { botName: input.botName });
   }
 
+  async bootstrapTradeAuthenticator(input: {
+    botName: string;
+    password: string;
+    prompts: SteamGuardPrompts;
+  }): Promise<BotAuthenticatorBootstrapResult> {
+    if (!this.steamMobileAuthGateway) {
+      throw new Error("Steam mobile authenticator bootstrap gateway is not configured.");
+    }
+
+    const bot = await this.repository.findBotByName(input.botName);
+    if (!bot) {
+      throw new Error(`Bot not found: ${input.botName}`);
+    }
+
+    const bootstrap = await this.steamMobileAuthGateway.enableAndFinalizeTwoFactor({
+      accountName: bot.accountName,
+      password: input.password,
+      prompts: input.prompts,
+      requestActivationCode: (message: string) => input.prompts.requestGuardCode(message),
+    });
+
+    const onboardingStartedAt = new Date();
+    const tradeLockedUntil = new Date(onboardingStartedAt.getTime() + 15 * 24 * 60 * 60 * 1000);
+    const updated = await this.repository.setBotTradeSecretsBySteamId(bot.steamId, {
+      sharedSecret: bootstrap.sharedSecret,
+      identitySecret: bootstrap.identitySecret,
+      revocationCode: bootstrap.revocationCode,
+      onboardingState: "ONBOARDING_LOCKED",
+      onboardingStartedAt,
+      tradeLockedUntil,
+    });
+
+    return {
+      botName: updated.name,
+      steamId: updated.steamId,
+      onboardingState: "ONBOARDING_LOCKED",
+      tradable: false,
+      tradeLockedUntil,
+      revocationCode: bootstrap.revocationCode,
+    };
+  }
+
   async syncBotsFromDeclaration(input: {
     accounts: BotDeclarationAccount[];
     prompts: SteamGuardPrompts;
@@ -194,7 +256,7 @@ export class BotSessionService {
       }
 
       try {
-        const bot = await this.ensureBotIdentity({
+        let bot = await this.ensureBotIdentity({
           alias,
           steamId,
           accountName,
@@ -202,10 +264,24 @@ export class BotSessionService {
 
         const secrets = input.secretsBySteamId?.[steamId];
         if (secrets) {
-          await this.repository.setBotTradeSecretsBySteamId(steamId, {
+          bot = await this.repository.setBotTradeSecretsBySteamId(steamId, {
             sharedSecret: secrets.sharedSecret?.trim() || null,
             identitySecret: secrets.identitySecret?.trim() || null,
+            ...(bot.onboardingState === "ONBOARDING_LOCKED" && bot.tradeLockedUntil && bot.tradeLockedUntil > new Date()
+              ? {}
+              : { onboardingState: "AUTO_READY", tradeLockedUntil: null }),
           });
+        } else if (!bot.sharedSecret && this.steamMobileAuthGateway) {
+          const bootstrapResult = await this.bootstrapTradeAuthenticator({
+            botName: bot.name,
+            password,
+            prompts: input.prompts,
+          });
+          this.debug("syncBotsFromDeclaration:bootstrappedSecrets", {
+            botName: bot.name,
+            tradeLockedUntil: bootstrapResult.tradeLockedUntil.toISOString(),
+          });
+          bot = (await this.repository.findBotBySteamId(steamId)) ?? bot;
         }
 
         const authResult = await this.steamAuthGateway.authenticateWithCredentials({
@@ -267,6 +343,9 @@ export class BotSessionService {
         await this.repository.setBotTradeSecretsBySteamId(steamId, {
           sharedSecret: secrets.sharedSecret?.trim() || null,
           identitySecret: secrets.identitySecret?.trim() || null,
+          ...(bot.onboardingState === "ONBOARDING_LOCKED" && bot.tradeLockedUntil && bot.tradeLockedUntil > new Date()
+            ? {}
+            : { onboardingState: "AUTO_READY", tradeLockedUntil: null }),
         });
         rows.push({
           steamId,
@@ -300,7 +379,8 @@ export class BotSessionService {
       throw new Error(`Bot not found: ${botName}`);
     }
 
-    const status = await this.buildSessionStatus(bot, now);
+    const transitioned = await this.transitionOnboardingStateIfNeeded(bot, now);
+    const status = await this.buildSessionStatus(transitioned, now);
     this.debug("checkBotSession:result", {
       botName,
       hasSession: status.hasSession,
@@ -318,9 +398,10 @@ export class BotSessionService {
     this.debug("listBotSessions:loadedBots", { count: botsWithSessions.length });
 
     for (const item of botsWithSessions) {
+      const transitioned = await this.transitionOnboardingStateIfNeeded(item.bot, now);
       if (!item.session) {
         statuses.push({
-          bot: item.bot,
+          bot: transitioned,
           hasSession: false,
           isValid: false,
           expiresAt: null,
@@ -338,7 +419,7 @@ export class BotSessionService {
       await this.repository.markSessionChecked(item.bot.id, now);
 
       statuses.push({
-        bot: item.bot,
+        bot: transitioned,
         hasSession: true,
         isValid,
         expiresAt: item.session.expiresAt,
@@ -354,6 +435,29 @@ export class BotSessionService {
 
     this.debug("listBotSessions:result", { count: statuses.length });
     return statuses;
+  }
+
+  async listBotsWithTradeReadiness(now: Date = new Date()): Promise<
+    Array<{
+      bot: Bot;
+      onboardingState: BotOnboardingState;
+      tradable: boolean;
+    }>
+  > {
+    const bots = await this.repository.listBots();
+    const rows: Array<{ bot: Bot; onboardingState: BotOnboardingState; tradable: boolean }> = [];
+
+    for (const bot of bots) {
+      const transitioned = await this.transitionOnboardingStateIfNeeded(bot, now);
+      const readiness = getBotTradeReadiness(transitioned, now);
+      rows.push({
+        bot: transitioned,
+        onboardingState: readiness.onboardingState,
+        tradable: readiness.tradable,
+      });
+    }
+
+    return rows;
   }
 
   private async buildSessionStatus(bot: Bot, now: Date): Promise<BotSessionStatus> {
@@ -408,5 +512,21 @@ export class BotSessionService {
       name: input.alias,
       accountName: input.accountName,
     });
+  }
+
+  private async transitionOnboardingStateIfNeeded(bot: Bot, now: Date): Promise<Bot> {
+    if (
+      bot.onboardingState === "ONBOARDING_LOCKED" &&
+      bot.tradeLockedUntil &&
+      bot.tradeLockedUntil.getTime() <= now.getTime()
+    ) {
+      return this.repository.setBotOnboardingState({
+        botId: bot.id,
+        onboardingState: "AUTO_READY",
+        tradeLockedUntil: bot.tradeLockedUntil,
+      });
+    }
+
+    return bot;
   }
 }

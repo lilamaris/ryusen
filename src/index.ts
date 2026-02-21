@@ -65,7 +65,6 @@ const debugLogger: DebugLogger = (scope, message, meta) => {
 const {
   prisma,
   steamProvider,
-  botSessionRepository,
   botInventoryRepository,
   botSessionService,
   botInventoryRefreshService,
@@ -102,7 +101,6 @@ registerBotCommands(bot, {
 });
 
 registerLsCommands(ls, {
-  botSessionRepository,
   botSessionService,
   botInventoryRepository,
   clusterStockService,

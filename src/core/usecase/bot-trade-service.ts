@@ -2,6 +2,7 @@ import type { BotSessionRepository } from "../port/bot-session-repository";
 import type { BotTradeOfferGateway, TradeOfferAsset } from "../port/bot-trade-offer-gateway";
 import type { InventoryProvider, InventoryQuery, InventoryItem } from "../provider/inventory-provider";
 import type { DebugLogger } from "./debug-logger";
+import { getBotTradeReadiness } from "../bot/bot-session";
 
 export type BotTradeOfferResult = {
   tradeOfferId: string;
@@ -48,6 +49,13 @@ export class BotTradeService {
     const toBot = await this.botSessionRepository.findBotByName(input.toBotName);
     if (!toBot) {
       throw new Error(`Target bot not found: ${input.toBotName}`);
+    }
+
+    const sourceReadiness = getBotTradeReadiness(fromBot);
+    if (!sourceReadiness.tradable) {
+      throw new Error(
+        `Source bot is not tradable: ${input.fromBotName} (state=${sourceReadiness.onboardingState})`
+      );
     }
 
     const normalizedInputToken = input.toBotTradeToken?.trim();

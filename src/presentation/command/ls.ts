@@ -1,7 +1,6 @@
 import type { Command } from "commander";
 import type { PrismaBotInventoryRepository } from "../../adapter/persistence/prisma/prisma-bot-inventory-repository";
-import type { PrismaBotSessionRepository } from "../../adapter/persistence/prisma/prisma-bot-session-repository";
-import { getBotTradeAutomationMode } from "../../core/bot/bot-session";
+import { getBotTradeAutomationMode, getBotTradeReadiness } from "../../core/bot/bot-session";
 import type { ClusterStockService } from "../../core/usecase/cluster-stock-service";
 import type { BotSessionService } from "../../core/usecase/bot-session-service";
 
@@ -22,7 +21,6 @@ type StockOptions = {
 };
 
 type RegisterLsCommandDeps = {
-  botSessionRepository: PrismaBotSessionRepository;
   botSessionService: BotSessionService;
   botInventoryRepository: PrismaBotInventoryRepository;
   clusterStockService: ClusterStockService;
@@ -30,7 +28,7 @@ type RegisterLsCommandDeps = {
 
 export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): void {
   ls.command("bots").action(async () => {
-    const bots = await deps.botSessionRepository.listBots();
+    const bots = await deps.botSessionService.listBotsWithTradeReadiness();
     if (bots.length === 0) {
       console.log("No bots found.");
       return;
@@ -38,11 +36,14 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
 
     console.table(
       bots.map((item) => ({
-        name: item.name,
-        steamId: item.steamId,
-        accountName: item.accountName,
-        hasTradeToken: Boolean(item.tradeToken),
-        tradeAutomation: getBotTradeAutomationMode(item),
+        name: item.bot.name,
+        steamId: item.bot.steamId,
+        accountName: item.bot.accountName,
+        hasTradeToken: Boolean(item.bot.tradeToken),
+        tradeAutomation: getBotTradeAutomationMode(item.bot),
+        onboardingState: item.onboardingState,
+        tradable: item.tradable,
+        tradeLockedUntil: item.bot.tradeLockedUntil?.toISOString() ?? null,
       }))
     );
   });
@@ -61,6 +62,9 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
             hasSession: status.hasSession,
             isValid: status.isValid,
             tradeAutomation: getBotTradeAutomationMode(status.bot),
+            onboardingState: status.bot.onboardingState ?? null,
+            tradable: getBotTradeReadiness(status.bot).tradable,
+            tradeLockedUntil: status.bot.tradeLockedUntil?.toISOString() ?? null,
             expiresAt: status.expiresAt?.toISOString() ?? null,
             lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
           },
@@ -77,6 +81,9 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
           hasSession: status.hasSession,
           isValid: status.isValid,
           tradeAutomation: getBotTradeAutomationMode(status.bot),
+          onboardingState: status.bot.onboardingState ?? null,
+          tradable: getBotTradeReadiness(status.bot).tradable,
+          tradeLockedUntil: status.bot.tradeLockedUntil?.toISOString() ?? null,
           expiresAt: status.expiresAt?.toISOString() ?? null,
           lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
         }))

@@ -1,4 +1,4 @@
-import type { Bot, BotSession } from "../bot/bot-session";
+import type { Bot, BotOnboardingState, BotSession } from "../bot/bot-session";
 
 export interface BotSessionRepository {
   createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot>;
@@ -18,6 +18,18 @@ export interface BotSessionRepository {
   setBotTradeToken(botName: string, tradeToken: string): Promise<Bot>;
   setBotTradeSecretsBySteamId(
     steamId: string,
-    secrets: { sharedSecret: string | null; identitySecret: string | null }
+    secrets: {
+      sharedSecret: string | null;
+      identitySecret: string | null;
+      revocationCode?: string | null;
+      onboardingState?: BotOnboardingState;
+      onboardingStartedAt?: Date | null;
+      tradeLockedUntil?: Date | null;
+    }
   ): Promise<Bot>;
+  setBotOnboardingState(input: {
+    botId: string;
+    onboardingState: BotOnboardingState;
+    tradeLockedUntil: Date | null;
+  }): Promise<Bot>;
 }

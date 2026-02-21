@@ -5,8 +5,9 @@
 - Manage bot identity, Steam authentication, and session lifecycle.
 - Keep one current session per bot and expose session validity for operations that depend on authenticated cookies.
 - Manage declarative bot/session sync from YAML files.
+- Manage 2FA authenticator bootstrap state (`enableTwoFactor`) and trade lock window.
 - Scope boundary:
-  - In scope: bot create/connect/reauth/sync, session validity checks, OTP/manual confirmation prompts, bot secret sync.
+  - In scope: bot create/connect/reauth/sync, session validity checks, OTP/manual confirmation prompts, bot secret sync, authenticator bootstrap and onboarding lock state transition.
   - Out of scope: inventory fetch/storage logic, consolidation planning logic.
 
 ## Owning Code Paths
@@ -23,8 +24,10 @@
   - Prisma implementation for bot/session persistence.
 - `src/adapter/steam/steam-auth-gateway.ts`
   - `steam-session` based auth gateway implementation.
+- `src/adapter/steam/steam-mobile-auth-gateway.ts`
+  - Mobile-app auth + `enableTwoFactor/finalizeTwoFactor` orchestration.
 - `src/presentation/command/bot.ts`
-  - `bot create/connect/reauth/sync/sync-secrets` command wiring.
+  - `bot create/connect/reauth/sync/sync-secrets/bootstrap-authenticator` command wiring.
 - `src/presentation/command/bot-sync-yaml.ts`
   - YAML declaration parsing for accounts/secrets.
 - `src/presentation/command/ls.ts`
@@ -42,7 +45,7 @@
     - `upsertSession`, `findSessionByBotId`, `markSessionChecked`
   - `SteamAuthGateway.authenticateWithCredentials`
 - Persistence models:
-  - `Bot` (`name`, `steamId`, `accountName`, `sharedSecret`, `identitySecret`)
+  - `Bot` (`name`, `steamId`, `accountName`, `sharedSecret`, `identitySecret`, `revocationCode`, `onboardingState`, `onboardingStartedAt`, `tradeLockedUntil`)
   - `BotSession` (`botId`, `sessionToken`, `webCookies`, `expiresAt`, `lastCheckedAt`)
 
 ## Main Flows
@@ -90,6 +93,14 @@
 1. CLI reads secrets YAML keyed by `steamId`.
 2. `BotSessionService.syncBotSecretsFromDeclaration` updates only registered bots.
 3. CLI prints updated/error rows and summary counts.
+
+### Flow: `bot bootstrap-authenticator`
+
+1. CLI receives target bot name and account password.
+2. `SteamMobileTwoFactorGateway` authenticates as `MobileApp` and calls Steam `enableTwoFactor`.
+3. Operator enters activation code (SMS/email) and gateway finalizes via `finalizeTwoFactor`.
+4. Service stores `sharedSecret`/`identitySecret`/`revocationCode`, marks bot `ONBOARDING_LOCKED`, and sets `tradeLockedUntil = onboardingStartedAt + 15 days`.
+5. After lock expiry, listing/session checks auto-transition the bot state to `AUTO_READY`.
 
 ## CLI Usage
 
@@ -148,6 +159,12 @@ secrets:
 npm run dev -- bot sync-secrets --from-yaml-file <secrets.yaml>
 ```
 
+### Bootstrap authenticator and extract secrets automatically
+
+```bash
+npm run dev -- bot bootstrap-authenticator --name <bot-name>
+```
+
 ### List session status
 
 ```bash
@@ -168,8 +185,10 @@ npm run dev -- ls sessions --name <bot-name>
 - Session validity:
   - Expired/missing session is not auto-renewed; operator runs `bot reauth`.
 - Trade automation readiness:
-  - `sharedSecret` present → `AUTO`
-  - `sharedSecret` missing → `MANUAL`
+  - `onboardingState=AUTO_READY` → tradable `true`
+  - `onboardingState=ONBOARDING_LOCKED` and `tradeLockedUntil` not reached → tradable `false`
+  - `onboardingState=ONBOARDING_LOCKED` and lock expired → auto-transition to `AUTO_READY`
+  - `sharedSecret` missing keeps automation mode `MANUAL`
 
 ## Troubleshooting
 

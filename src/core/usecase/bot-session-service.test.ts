@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { BotSessionService } from "./bot-session-service";
 import type { BotSessionRepository } from "../port/bot-session-repository";
 import type { SteamAuthGateway, SteamGuardPrompts } from "../port/steam-auth-gateway";
-import type { Bot, BotSession } from "../bot/bot-session";
+import type { Bot, BotOnboardingState, BotSession } from "../bot/bot-session";
+import type { SteamMobileAuthGateway } from "../port/steam-mobile-auth-gateway";
 
 class FakeRepository implements BotSessionRepository {
   public listBotsWithSessionsCalls = 0;
@@ -56,6 +57,10 @@ class FakeRepository implements BotSessionRepository {
   }
 
   setBotTradeSecretsBySteamId(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
+
+  setBotOnboardingState(): Promise<Bot> {
     return Promise.reject(new Error("not used"));
   }
 }
@@ -183,6 +188,10 @@ void test("setTradeToken updates existing bot token", async () => {
     setBotTradeSecretsBySteamId(): Promise<Bot> {
       return Promise.reject(new Error("not used"));
     }
+
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
   }
 
   const repository = new SetTokenRepository();
@@ -268,7 +277,12 @@ void test("syncBotsFromDeclaration creates bots, applies secrets, and updates se
 
     async setBotTradeSecretsBySteamId(
       steamId: string,
-      secrets: { sharedSecret: string | null; identitySecret: string | null }
+      secrets: {
+        sharedSecret: string | null;
+        identitySecret: string | null;
+        onboardingState?: BotOnboardingState;
+        tradeLockedUntil?: Date | null;
+      }
     ): Promise<Bot> {
       const bot = this.bots.find((item) => item.steamId === steamId);
       if (!bot) {
@@ -276,7 +290,17 @@ void test("syncBotsFromDeclaration creates bots, applies secrets, and updates se
       }
       bot.sharedSecret = secrets.sharedSecret;
       bot.identitySecret = secrets.identitySecret;
+      if (secrets.onboardingState) {
+        bot.onboardingState = secrets.onboardingState;
+      }
+      if (secrets.tradeLockedUntil !== undefined) {
+        bot.tradeLockedUntil = secrets.tradeLockedUntil;
+      }
       return bot;
+    }
+
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
     }
   }
 
@@ -381,14 +405,25 @@ void test("syncBotSecretsFromDeclaration updates only registered bots", async ()
 
     async setBotTradeSecretsBySteamId(
       steamId: string,
-      secrets: { sharedSecret: string | null; identitySecret: string | null }
+      secrets: {
+        sharedSecret: string | null;
+        identitySecret: string | null;
+        onboardingState?: BotOnboardingState;
+      }
     ): Promise<Bot> {
       if (steamId !== this.bot.steamId) {
         throw new Error("not found");
       }
       this.bot.sharedSecret = secrets.sharedSecret;
       this.bot.identitySecret = secrets.identitySecret;
+      if (secrets.onboardingState) {
+        this.bot.onboardingState = secrets.onboardingState;
+      }
       return this.bot;
+    }
+
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
     }
   }
 
@@ -405,4 +440,183 @@ void test("syncBotSecretsFromDeclaration updates only registered bots", async ()
   assert.equal(result.updated, 1);
   assert.equal(result.failed, 1);
   assert.equal(repository.bot.sharedSecret, "shared");
+});
+
+void test("bootstrapTradeAuthenticator stores secrets and sets onboarding lock", async () => {
+  class BootstrapRepository implements BotSessionRepository {
+    public bot: Bot = {
+      id: "bot-1",
+      name: "alpha",
+      steamId: "76561198000000001",
+      accountName: "alpha_acc",
+      tradeToken: null,
+      sharedSecret: null,
+      identitySecret: null,
+      onboardingState: "MANUAL_ONLY",
+      tradeLockedUntil: null,
+    };
+
+    createBot(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    findBotByName(name: string): Promise<Bot | null> {
+      return Promise.resolve(name === this.bot.name ? this.bot : null);
+    }
+    findBotBySteamId(): Promise<Bot | null> {
+      return Promise.resolve(this.bot);
+    }
+    updateBotIdentity(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    listBots(): Promise<Bot[]> {
+      return Promise.resolve([this.bot]);
+    }
+    listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+      return Promise.resolve([]);
+    }
+    upsertSession(): Promise<BotSession> {
+      return Promise.reject(new Error("not used"));
+    }
+    findSessionByBotId(): Promise<BotSession | null> {
+      return Promise.resolve(null);
+    }
+    markSessionChecked(): Promise<void> {
+      return Promise.resolve();
+    }
+    setBotTradeToken(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    async setBotTradeSecretsBySteamId(
+      steamId: string,
+      secrets: {
+        sharedSecret: string | null;
+        identitySecret: string | null;
+        revocationCode?: string | null;
+        onboardingState?: BotOnboardingState;
+        onboardingStartedAt?: Date | null;
+        tradeLockedUntil?: Date | null;
+      }
+    ): Promise<Bot> {
+      if (steamId !== this.bot.steamId) {
+        throw new Error("not found");
+      }
+      this.bot.sharedSecret = secrets.sharedSecret;
+      this.bot.identitySecret = secrets.identitySecret;
+      this.bot.revocationCode = secrets.revocationCode ?? null;
+      if (secrets.onboardingState !== undefined) {
+        this.bot.onboardingState = secrets.onboardingState;
+      }
+      this.bot.onboardingStartedAt = secrets.onboardingStartedAt ?? null;
+      this.bot.tradeLockedUntil = secrets.tradeLockedUntil ?? null;
+      return this.bot;
+    }
+  }
+
+  class BootstrapMobileGateway implements SteamMobileAuthGateway {
+    enableAndFinalizeTwoFactor(): Promise<{
+      sharedSecret: string;
+      identitySecret: string;
+      revocationCode: string;
+    }> {
+      return Promise.resolve({
+        sharedSecret: "shared-secret",
+        identitySecret: "identity-secret",
+        revocationCode: "R12345",
+      });
+    }
+  }
+
+  const repository = new BootstrapRepository();
+  const service = new BotSessionService(
+    repository,
+    new FakeAuthGateway(),
+    new BootstrapMobileGateway()
+  );
+
+  const result = await service.bootstrapTradeAuthenticator({
+    botName: "alpha",
+    password: "pw",
+    prompts: {
+      requestGuardCode: () => Promise.resolve("000000"),
+      notifyPendingConfirmation: () => Promise.resolve(),
+    },
+  });
+
+  assert.equal(result.onboardingState, "ONBOARDING_LOCKED");
+  assert.equal(result.tradable, false);
+  assert.equal(repository.bot.sharedSecret, "shared-secret");
+  assert.equal(repository.bot.onboardingState, "ONBOARDING_LOCKED");
+  assert.ok(repository.bot.tradeLockedUntil instanceof Date);
+});
+
+void test("listBotsWithTradeReadiness transitions expired onboarding lock to AUTO_READY", async () => {
+  class TransitionRepository implements BotSessionRepository {
+    public bot: Bot = {
+      id: "bot-1",
+      name: "alpha",
+      steamId: "76561198000000001",
+      accountName: "alpha_acc",
+      tradeToken: null,
+      sharedSecret: "shared",
+      identitySecret: "identity",
+      onboardingState: "ONBOARDING_LOCKED",
+      tradeLockedUntil: new Date("2026-02-01T00:00:00.000Z"),
+    };
+
+    createBot(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    findBotByName(): Promise<Bot | null> {
+      return Promise.resolve(this.bot);
+    }
+    findBotBySteamId(): Promise<Bot | null> {
+      return Promise.resolve(this.bot);
+    }
+    updateBotIdentity(): Promise<Bot> {
+      return Promise.resolve(this.bot);
+    }
+    listBots(): Promise<Bot[]> {
+      return Promise.resolve([this.bot]);
+    }
+    listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+      return Promise.resolve([]);
+    }
+    upsertSession(): Promise<BotSession> {
+      return Promise.reject(new Error("not used"));
+    }
+    findSessionByBotId(): Promise<BotSession | null> {
+      return Promise.resolve(null);
+    }
+    markSessionChecked(): Promise<void> {
+      return Promise.resolve();
+    }
+    setBotTradeToken(): Promise<Bot> {
+      return Promise.resolve(this.bot);
+    }
+    setBotTradeSecretsBySteamId(): Promise<Bot> {
+      return Promise.resolve(this.bot);
+    }
+    setBotOnboardingState(input: {
+      botId: string;
+      onboardingState: BotOnboardingState;
+      tradeLockedUntil: Date | null;
+    }): Promise<Bot> {
+      this.bot.id = input.botId;
+      this.bot.onboardingState = input.onboardingState;
+      this.bot.tradeLockedUntil = input.tradeLockedUntil;
+      return Promise.resolve(this.bot);
+    }
+  }
+
+  const repository = new TransitionRepository();
+  const service = new BotSessionService(repository, new FakeAuthGateway());
+  const rows = await service.listBotsWithTradeReadiness(new Date("2026-02-21T00:00:00.000Z"));
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.onboardingState, "AUTO_READY");
+  assert.equal(rows[0]?.tradable, true);
+  assert.equal(repository.bot.onboardingState, "AUTO_READY");
 });

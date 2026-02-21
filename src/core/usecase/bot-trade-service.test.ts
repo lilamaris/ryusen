@@ -61,6 +61,10 @@ class FakeBotSessionRepository implements BotSessionRepository {
   setBotTradeSecretsBySteamId(): Promise<Bot> {
     return Promise.reject(new Error("not implemented"));
   }
+
+  setBotOnboardingState(): Promise<Bot> {
+    return Promise.reject(new Error("not implemented"));
+  }
 }
 
 class FakeInventoryProvider implements InventoryProvider<InventoryQuery> {
@@ -117,7 +121,15 @@ function createInventoryItem(sku: string, assetId: string, amount: number): Inve
 
 void test("createOffer builds trade offer from assets", async () => {
   const bots: Bot[] = [
-    { id: "from", name: "from-bot", steamId: "1", accountName: "from-account", tradeToken: null },
+    {
+      id: "from",
+      name: "from-bot",
+      steamId: "1",
+      accountName: "from-account",
+      tradeToken: null,
+      sharedSecret: "shared",
+      onboardingState: "AUTO_READY",
+    },
     { id: "to", name: "to-bot", steamId: "2", accountName: "to-account", tradeToken: null },
   ];
   const session: BotSession = {
@@ -152,7 +164,15 @@ void test("createOffer builds trade offer from assets", async () => {
 
 void test("createOffer fails when requested amount exceeds available", async () => {
   const bots: Bot[] = [
-    { id: "from", name: "from-bot", steamId: "1", accountName: "from-account", tradeToken: null },
+    {
+      id: "from",
+      name: "from-bot",
+      steamId: "1",
+      accountName: "from-account",
+      tradeToken: null,
+      sharedSecret: "shared",
+      onboardingState: "AUTO_READY",
+    },
     { id: "to", name: "to-bot", steamId: "2", accountName: "to-account", tradeToken: null },
   ];
   const session: BotSession = {
@@ -185,7 +205,15 @@ void test("createOffer fails when requested amount exceeds available", async () 
 
 void test("createOffer uses target bot stored trade token when cli token is omitted", async () => {
   const bots: Bot[] = [
-    { id: "from", name: "from-bot", steamId: "1", accountName: "from-account", tradeToken: null },
+    {
+      id: "from",
+      name: "from-bot",
+      steamId: "1",
+      accountName: "from-account",
+      tradeToken: null,
+      sharedSecret: "shared",
+      onboardingState: "AUTO_READY",
+    },
     { id: "to", name: "to-bot", steamId: "2", accountName: "to-account", tradeToken: "stored-token" },
   ];
   const session: BotSession = {
@@ -212,4 +240,44 @@ void test("createOffer uses target bot stored trade token when cli token is omit
   });
 
   assert.strictEqual(gateway.lastPartnerTradeToken, "stored-token");
+});
+
+void test("createOffer blocks non-tradable source bot during onboarding lock", async () => {
+  const bots: Bot[] = [
+    {
+      id: "from",
+      name: "from-bot",
+      steamId: "1",
+      accountName: "from-account",
+      tradeToken: null,
+      sharedSecret: "secret",
+      onboardingState: "ONBOARDING_LOCKED",
+      tradeLockedUntil: new Date(Date.now() + 1000 * 60 * 60),
+    },
+    { id: "to", name: "to-bot", steamId: "2", accountName: "to-account", tradeToken: null },
+  ];
+  const session: BotSession = {
+    botId: "from",
+    sessionToken: "sessionid",
+    webCookies: ["sessionid=sessionid"],
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+    lastCheckedAt: null,
+  };
+  const repository = new FakeBotSessionRepository(bots, new Map([["from", session]]));
+  const provider = new FakeInventoryProvider(new Map());
+  const gateway = new FakeTradeOfferGateway();
+  const service = new BotTradeService(repository, provider, gateway);
+
+  await assert.rejects(
+    () =>
+      service.createOffer({
+        fromBotName: "from-bot",
+        toBotName: "to-bot",
+        appId: 440,
+        contextId: "2",
+        sku: "test-sku",
+        amount: 1,
+      }),
+    /not tradable/
+  );
 });

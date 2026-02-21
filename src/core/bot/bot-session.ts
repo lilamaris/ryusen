@@ -1,3 +1,10 @@
+export type BotOnboardingState =
+  | "MANUAL_ONLY"
+  | "AUTH_PENDING_CODE"
+  | "ONBOARDING_LOCKED"
+  | "AUTO_READY"
+  | "FAILED";
+
 export type Bot = {
   id: string;
   name: string;
@@ -6,6 +13,10 @@ export type Bot = {
   tradeToken: string | null;
   sharedSecret?: string | null;
   identitySecret?: string | null;
+  revocationCode?: string | null;
+  onboardingState?: BotOnboardingState;
+  onboardingStartedAt?: Date | null;
+  tradeLockedUntil?: Date | null;
 };
 
 export type BotSession = {
@@ -26,4 +37,29 @@ export type BotSessionStatus = {
 
 export function getBotTradeAutomationMode(bot: Bot): "AUTO" | "MANUAL" {
   return bot.sharedSecret ? "AUTO" : "MANUAL";
+}
+
+export function getBotTradeReadiness(
+  bot: Bot,
+  now: Date = new Date()
+): { onboardingState: BotOnboardingState; tradable: boolean } {
+  const storedState: BotOnboardingState = bot.onboardingState ?? (bot.sharedSecret ? "AUTO_READY" : "MANUAL_ONLY");
+  let onboardingState = storedState;
+
+  if (
+    storedState === "ONBOARDING_LOCKED" &&
+    bot.tradeLockedUntil &&
+    bot.tradeLockedUntil.getTime() <= now.getTime()
+  ) {
+    onboardingState = "AUTO_READY";
+  }
+
+  if (!bot.sharedSecret && onboardingState === "AUTO_READY") {
+    onboardingState = "MANUAL_ONLY";
+  }
+
+  return {
+    onboardingState,
+    tradable: onboardingState === "AUTO_READY",
+  };
 }

@@ -41,17 +41,29 @@ model BotHasItem {
 }
 
 model Bot {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  steamId     String     @unique
-  accountName String     @unique
-  tradeToken  String?
-  sharedSecret String?
-  identitySecret String?
-  session     BotSession?
-  items       BotHasItem[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  steamId            String             @unique
+  accountName        String             @unique
+  tradeToken         String?
+  sharedSecret       String?
+  identitySecret     String?
+  revocationCode     String?
+  onboardingState    BotOnboardingState @default(MANUAL_ONLY)
+  onboardingStartedAt DateTime?
+  tradeLockedUntil   DateTime?
+  session            BotSession?
+  items              BotHasItem[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+enum BotOnboardingState {
+  MANUAL_ONLY
+  AUTH_PENDING_CODE
+  ONBOARDING_LOCKED
+  AUTO_READY
+  FAILED
 }
 
 model BotSession {

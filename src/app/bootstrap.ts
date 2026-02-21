@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaBotInventoryRepository } from "../adapter/persistence/prisma/prisma-bot-inventory-repository";
 import { PrismaBotSessionRepository } from "../adapter/persistence/prisma/prisma-bot-session-repository";
 import { SteamSessionAuthGateway } from "../adapter/steam/steam-auth-gateway";
+import { SteamMobileTwoFactorGateway } from "../adapter/steam/steam-mobile-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "../adapter/steam/steam-authenticated-inventory-provider";
 import { SteamTradeOfferGateway } from "../adapter/steam/steam-trade-offer-gateway";
 import { ClusterStockService } from "../core/usecase/cluster-stock-service";
@@ -29,9 +30,15 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
   const prisma = new PrismaClient();
   const steamProvider = new SteamAuthenticatedInventoryProvider();
   const steamAuthGateway = new SteamSessionAuthGateway();
+  const steamMobileAuthGateway = new SteamMobileTwoFactorGateway();
   const botSessionRepository = new PrismaBotSessionRepository(prisma);
   const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
-  const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway, debugLogger);
+  const botSessionService = new BotSessionService(
+    botSessionRepository,
+    steamAuthGateway,
+    steamMobileAuthGateway,
+    debugLogger
+  );
   const botInventoryRefreshService = new BotInventoryRefreshService(
     botSessionRepository,
     steamProvider,

@@ -41,6 +41,10 @@ type BotTradeTokenOptions = {
   token: string;
 };
 
+type BotBootstrapAuthenticatorOptions = {
+  name: string;
+};
+
 type BotSyncOptions = {
   fromYamlFile: string;
   secretsYamlFile?: string;
@@ -116,6 +120,30 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
         tradeToken: options.token,
       });
       console.log(`Bot trade token updated: ${options.name}`);
+    });
+
+  bot
+    .command("bootstrap-authenticator")
+    .requiredOption("--name <name>", "Bot name")
+    .action(async (options: BotBootstrapAuthenticatorOptions) => {
+      const password = await deps.promptPassword();
+      const prompts = deps.buildPrompts();
+      const result = await deps.botSessionService.bootstrapTradeAuthenticator({
+        botName: options.name,
+        password,
+        prompts,
+      });
+
+      console.table([
+        {
+          bot: result.botName,
+          steamId: result.steamId,
+          onboardingState: result.onboardingState,
+          tradable: result.tradable,
+          tradeLockedUntil: result.tradeLockedUntil.toISOString(),
+        },
+      ]);
+      console.log(`Authenticator bootstrapped. Revocation code: ${result.revocationCode}`);
     });
 
   bot

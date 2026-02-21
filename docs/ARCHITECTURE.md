@@ -11,7 +11,7 @@ Detailed behavior, flow, and CLI usage live in module docs.
 
 - Bot identity/session/authentication
   - Module doc: `docs/module/bot-session.md`
-  - Main commands: `bot create`, `bot connect`, `bot reauth`, `bot sync`, `bot sync-secrets`, `ls sessions`, `ls bots`
+  - Main commands: `bot create`, `bot connect`, `bot reauth`, `bot sync`, `bot sync-secrets`, `bot bootstrap-authenticator`, `ls sessions`, `ls bots`
 - Inventory refresh and holdings persistence
   - Module doc: `docs/module/inventory-refresh.md`
   - Main commands: `bot refresh`, `bot watch`, `ls items`, `ls stock`
