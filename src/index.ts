@@ -4,10 +4,8 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-bot-session-repository";
 import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
-import {
-  SteamInventoryProvider,
-  type SteamInventoryQuery,
-} from "./adapter/steam/steam-inventory-provider";
+import { SteamInventoryProvider } from "./adapter/steam/steam-inventory-provider";
+import type { InventoryQuery } from "./core/provider/inventory-provider";
 import { BotSessionService } from "./core/usecase/bot-session-service";
 import { runCli } from "./presentation/cli";
 import { runTui } from "./presentation/tui";
@@ -35,7 +33,7 @@ type BotCheckOptions = {
   name?: string;
 };
 
-function getQueryOptions(options: QueryOptions): SteamInventoryQuery {
+function getQueryOptions(options: QueryOptions): InventoryQuery {
   if (!options.steamId) {
     throw new Error("--steam-id is required");
   }

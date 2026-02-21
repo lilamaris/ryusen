@@ -10,7 +10,7 @@
 
 - `src/core/provider/inventory-provider.ts`
   - Defines core inventory contract types.
-  - `InventoryItem` and `InventoryProvider<TQuery>` live here.
+  - `InventoryItem`, `InventoryQuery`, and `InventoryProvider<TQuery>` live here.
 - `src/core/bot/bot-session.ts`
   - Bot and bot-session domain types.
 - `src/core/port/bot-session-repository.ts`
@@ -58,6 +58,7 @@
   - Refreshes persisted session data.
 - `bot session-check`
   - Returns current validity of one bot or all bots using persisted session expiry metadata.
+  - Batch check path uses one repository read for bots+sessions, then updates `lastCheckedAt` per existing session.
 
 ## Update Policy
 

@@ -9,6 +9,7 @@
     "dev:web": "ts-node src/index.ts web --port 3000",
     "dev:cli": "ts-node src/index.ts cli",
     "dev:tui": "ts-node src/index.ts tui",
+    "test": "npm run build && node --test dist/**/*.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prisma:generate": "prisma generate",

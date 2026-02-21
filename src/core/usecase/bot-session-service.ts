@@ -78,12 +78,31 @@ export class BotSessionService {
   }
 
   async listBotSessions(now: Date = new Date()): Promise<BotSessionStatus[]> {
-    const bots = await this.repository.listBots();
+    const botsWithSessions = await this.repository.listBotsWithSessions();
     const statuses: BotSessionStatus[] = [];
 
-    for (const bot of bots) {
-      const status = await this.buildSessionStatus(bot, now);
-      statuses.push(status);
+    for (const item of botsWithSessions) {
+      if (!item.session) {
+        statuses.push({
+          bot: item.bot,
+          hasSession: false,
+          isValid: false,
+          expiresAt: null,
+          lastCheckedAt: null,
+        });
+        continue;
+      }
+
+      const isValid = item.session.expiresAt.getTime() > now.getTime();
+      await this.repository.markSessionChecked(item.bot.id, now);
+
+      statuses.push({
+        bot: item.bot,
+        hasSession: true,
+        isValid,
+        expiresAt: item.session.expiresAt,
+        lastCheckedAt: now,
+      });
     }
 
     return statuses;

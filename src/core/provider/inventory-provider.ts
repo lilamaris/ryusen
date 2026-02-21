@@ -6,6 +6,12 @@ export type InventoryItem = {
   iconUrl?: string;
 };
 
+export type InventoryQuery = {
+  steamId: string;
+  appId: number;
+  contextId: string;
+};
+
 export interface InventoryProvider<TQuery> {
   listItems(query: TQuery): Promise<InventoryItem[]>;
 }

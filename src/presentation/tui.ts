@@ -1,10 +1,9 @@
 import blessed from "blessed";
-import type { InventoryProvider } from "../core/provider/inventory-provider";
-import type { SteamInventoryQuery } from "../adapter/steam/steam-inventory-provider";
+import type { InventoryProvider, InventoryQuery } from "../core/provider/inventory-provider";
 
 export async function runTui(
-  provider: InventoryProvider<SteamInventoryQuery>,
-  query: SteamInventoryQuery
+  provider: InventoryProvider<InventoryQuery>,
+  query: InventoryQuery
 ): Promise<void> {
   const items = await provider.listItems(query);
 

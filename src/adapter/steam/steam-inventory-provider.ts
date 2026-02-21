@@ -1,10 +1,4 @@
-import type { InventoryItem, InventoryProvider } from "../../core/provider/inventory-provider";
-
-export type SteamInventoryQuery = {
-  steamId: string;
-  appId: number;
-  contextId: string;
-};
+import type { InventoryItem, InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
 
 type SteamAsset = {
   classid: string;
@@ -66,8 +60,8 @@ function toInventoryItems(assets: SteamAsset[], descriptions: SteamDescription[]
   return [...itemMap.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
 }
 
-export class SteamInventoryProvider implements InventoryProvider<SteamInventoryQuery> {
-  async listItems(query: SteamInventoryQuery): Promise<InventoryItem[]> {
+export class SteamInventoryProvider implements InventoryProvider<InventoryQuery> {
+  async listItems(query: InventoryQuery): Promise<InventoryItem[]> {
     const allAssets: SteamAsset[] = [];
     const allDescriptions: SteamDescription[] = [];
     let startAssetId: string | null = null;

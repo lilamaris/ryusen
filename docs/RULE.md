@@ -112,6 +112,15 @@ The module document should include at least:
 
 If a module changes significantly later, update its module doc in the same commit/PR.
 
+## 7. Require tests for behavioral changes
+
+When adding features or changing behavior, include tests in the same change set.
+
+- Add or update tests that fail before the change and pass after the change.
+- Prefer tests close to the changed module (`*.test.ts`) and keep scope minimal.
+- Do not merge behavior changes without executable regression coverage.
+- If a test is not feasible, document why and provide a concrete verification plan.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

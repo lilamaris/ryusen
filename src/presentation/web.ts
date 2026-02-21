@@ -1,6 +1,5 @@
 import express from "express";
-import type { InventoryProvider } from "../core/provider/inventory-provider";
-import type { SteamInventoryQuery } from "../adapter/steam/steam-inventory-provider";
+import type { InventoryProvider, InventoryQuery } from "../core/provider/inventory-provider";
 
 function pageTemplate(content: string): string {
   return `<!doctype html>
@@ -41,7 +40,7 @@ function getSingleQueryValue(value: unknown, fallback: string): string {
   return fallback;
 }
 
-function parseQuery(steamId: string, appId: string, contextId: string): SteamInventoryQuery {
+function parseQuery(steamId: string, appId: string, contextId: string): InventoryQuery {
   return {
     steamId,
     appId: Number(appId),
@@ -50,7 +49,7 @@ function parseQuery(steamId: string, appId: string, contextId: string): SteamInv
 }
 
 export async function runWebServer(
-  provider: InventoryProvider<SteamInventoryQuery>,
+  provider: InventoryProvider<InventoryQuery>,
   port: number
 ): Promise<void> {
   const app = express();

@@ -76,6 +76,24 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
     return records.map(toBot);
   }
 
+  async listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+    const records = await this.prisma.bot.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        session: true,
+      },
+    });
+
+    return records.map((record) => ({
+      bot: toBot(record),
+      session: record.session ? toSession(record.session) : null,
+    }));
+  }
+
   async upsertSession(input: {
     botId: string;
     sessionToken: string;
