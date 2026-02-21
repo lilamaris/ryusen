@@ -1,5 +1,6 @@
 import express from "express";
-import { fetchSteamInventory, type SteamInventoryQuery } from "./steam";
+import type { InventoryProvider } from "./inventory";
+import type { SteamInventoryQuery } from "./steam";
 
 function pageTemplate(content: string): string {
   return `<!doctype html>
@@ -48,7 +49,10 @@ function parseQuery(steamId: string, appId: string, contextId: string): SteamInv
   };
 }
 
-export async function runWebServer(port: number): Promise<void> {
+export async function runWebServer(
+  provider: InventoryProvider<SteamInventoryQuery>,
+  port: number
+): Promise<void> {
   const app = express();
 
   app.get("/", (_req, res) => {
@@ -67,7 +71,7 @@ export async function runWebServer(port: number): Promise<void> {
 
     try {
       const query = parseQuery(steamId, appId, contextId);
-      const items = await fetchSteamInventory(query);
+      const items = await provider.listItems(query);
       const rows = items
         .map(
           (item) =>

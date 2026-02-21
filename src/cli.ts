@@ -1,7 +1,11 @@
-import { fetchSteamInventory, type SteamInventoryQuery } from "./steam";
+import type { InventoryProvider } from "./inventory";
+import type { SteamInventoryQuery } from "./steam";
 
-export async function runCli(query: SteamInventoryQuery): Promise<void> {
-  const items = await fetchSteamInventory(query);
+export async function runCli(
+  provider: InventoryProvider<SteamInventoryQuery>,
+  query: SteamInventoryQuery
+): Promise<void> {
+  const items = await provider.listItems(query);
 
   if (items.length === 0) {
     console.log("No items found.");

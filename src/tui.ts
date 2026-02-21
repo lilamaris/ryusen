@@ -1,8 +1,12 @@
 import blessed from "blessed";
-import { fetchSteamInventory, type SteamInventoryQuery } from "./steam";
+import type { InventoryProvider } from "./inventory";
+import type { SteamInventoryQuery } from "./steam";
 
-export async function runTui(query: SteamInventoryQuery): Promise<void> {
-  const items = await fetchSteamInventory(query);
+export async function runTui(
+  provider: InventoryProvider<SteamInventoryQuery>,
+  query: SteamInventoryQuery
+): Promise<void> {
+  const items = await provider.listItems(query);
 
   const screen = blessed.screen({ smartCSR: true, title: "Steam Inventory" });
   const table = blessed.listtable({

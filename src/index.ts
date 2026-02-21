@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { runCli } from "./cli";
+import { SteamInventoryProvider, type SteamInventoryQuery } from "./steam";
 import { runTui } from "./tui";
 import { runWebServer } from "./web";
-import type { SteamInventoryQuery } from "./steam";
 
 type QueryOptions = {
   steamId: string;
@@ -23,6 +23,7 @@ function getQueryOptions(options: QueryOptions): SteamInventoryQuery {
 }
 
 const program = new Command();
+const steamProvider = new SteamInventoryProvider();
 
 program
   .name("ryusen")
@@ -35,7 +36,7 @@ program
   .option("--app-id <appId>", "App ID", "730")
   .option("--context-id <contextId>", "Context ID", "2")
   .action(async (options: QueryOptions) => {
-    await runCli(getQueryOptions(options));
+    await runCli(steamProvider, getQueryOptions(options));
   });
 
 program
@@ -44,14 +45,14 @@ program
   .option("--app-id <appId>", "App ID", "730")
   .option("--context-id <contextId>", "Context ID", "2")
   .action(async (options: QueryOptions) => {
-    await runTui(getQueryOptions(options));
+    await runTui(steamProvider, getQueryOptions(options));
   });
 
 program
   .command("web")
   .option("--port <port>", "Web server port", "3000")
   .action(async (options: { port: string }) => {
-    await runWebServer(Number(options.port));
+    await runWebServer(steamProvider, Number(options.port));
   });
 
 program.parseAsync(process.argv).catch((error: unknown) => {
