@@ -17,6 +17,14 @@ class FakeSessionRepository implements BotSessionRepository {
     return Promise.reject(new Error("not used"));
   }
 
+  findBotBySteamId(): Promise<Bot | null> {
+    return Promise.reject(new Error("not used"));
+  }
+
+  updateBotIdentity(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
+
   listBots(): Promise<Bot[]> {
     return Promise.reject(new Error("not used"));
   }
@@ -35,6 +43,14 @@ class FakeSessionRepository implements BotSessionRepository {
 
   markSessionChecked(): Promise<void> {
     return Promise.resolve();
+  }
+
+  setBotTradeToken(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
+
+  setBotTradeSecretsBySteamId(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
   }
 }
 
@@ -55,7 +71,17 @@ class FakeInventoryProvider implements InventoryProvider<InventoryQuery> {
         name: "Mann Co. Supply Crate Key",
         marketHashName: "Mann Co. Supply Crate Key",
         quantity: 2,
-        rawPayload: { source: query.steamId },
+        rawPayload: {
+          assets: [
+            {
+              assetId: "asset-111",
+              classId: "1",
+              instanceId: "0",
+              amount: 2,
+            },
+          ],
+          description: null,
+        },
       },
     ]);
   }
@@ -92,7 +118,7 @@ void test("refreshAll updates only valid sessions and records failures", async (
   const now = new Date("2026-02-21T12:00:00.000Z");
   const sessions = new FakeSessionRepository([
     {
-      bot: { id: "b1", name: "ok", steamId: "steam-ok", accountName: "ok_acc" },
+      bot: { id: "b1", name: "ok", steamId: "steam-ok", accountName: "ok_acc", tradeToken: null },
       session: {
         botId: "b1",
         sessionToken: "token",
@@ -102,7 +128,7 @@ void test("refreshAll updates only valid sessions and records failures", async (
       },
     },
     {
-      bot: { id: "b2", name: "expired", steamId: "steam-exp", accountName: "exp_acc" },
+      bot: { id: "b2", name: "expired", steamId: "steam-exp", accountName: "exp_acc", tradeToken: null },
       session: {
         botId: "b2",
         sessionToken: "token",
@@ -112,7 +138,7 @@ void test("refreshAll updates only valid sessions and records failures", async (
       },
     },
     {
-      bot: { id: "b3", name: "missing-cookie", steamId: "steam-no-cookie", accountName: "nocookie_acc" },
+      bot: { id: "b3", name: "missing-cookie", steamId: "steam-no-cookie", accountName: "nocookie_acc", tradeToken: null },
       session: {
         botId: "b3",
         sessionToken: "token",
@@ -122,7 +148,7 @@ void test("refreshAll updates only valid sessions and records failures", async (
       },
     },
     {
-      bot: { id: "b4", name: "fail", steamId: "steam-fail", accountName: "fail_acc" },
+      bot: { id: "b4", name: "fail", steamId: "steam-fail", accountName: "fail_acc", tradeToken: null },
       session: {
         botId: "b4",
         sessionToken: "token",

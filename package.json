@@ -38,6 +38,7 @@
     "blessed": "^0.1.81",
     "commander": "^14.0.3",
     "express": "^5.2.1",
-    "steam-session": "^1.9.4"
+    "steam-session": "^1.9.4",
+    "yaml": "^2.8.2"
   }
 }

@@ -1,6 +1,8 @@
 import type { Command } from "commander";
+import type { BotTradeService } from "../../core/usecase/bot-trade-service";
 import type { BotSessionService } from "../../core/usecase/bot-session-service";
 import type { SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
+import { loadBotAccountDeclarationFromYaml, loadBotSecretsDeclarationFromYaml } from "./bot-sync-yaml";
 
 type BotRegisterOptions = {
   name: string;
@@ -23,12 +25,34 @@ type BotRefreshLoopOptions = BotRefreshOptions & {
   intervalSeconds: string;
 };
 
+type BotTradeOptions = {
+  from: string;
+  to: string;
+  toTradeToken?: string;
+  sku: string;
+  amount: string;
+  appId: string;
+  contextId: string;
+  message?: string;
+};
+
+type BotTradeTokenOptions = {
+  name: string;
+  token: string;
+};
+
+type BotSyncOptions = {
+  fromYamlFile: string;
+  secretsYamlFile?: string;
+};
+
 type RegisterBotCommandDeps = {
   botSessionService: BotSessionService;
   promptPassword: () => Promise<string>;
   buildPrompts: () => SteamGuardPrompts;
   runRefreshOnce: (options: BotRefreshOptions) => Promise<void>;
   sleep: (ms: number) => Promise<void>;
+  botTradeService: BotTradeService;
 };
 
 export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps): void {
@@ -83,6 +107,63 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
     });
 
   bot
+    .command("set-trade-token")
+    .requiredOption("--name <name>", "Bot name")
+    .requiredOption("--token <token>", "Trade offer token from Steam trade URL")
+    .action(async (options: BotTradeTokenOptions) => {
+      await deps.botSessionService.setTradeToken({
+        botName: options.name,
+        tradeToken: options.token,
+      });
+      console.log(`Bot trade token updated: ${options.name}`);
+    });
+
+  bot
+    .command("sync")
+    .requiredOption("--from-yaml-file <path>", "Bot account YAML file path")
+    .option("--secrets-yaml-file <path>", "Bot secret YAML file path")
+    .action(async (options: BotSyncOptions) => {
+      const accounts = await loadBotAccountDeclarationFromYaml(options.fromYamlFile);
+      const secretsBySteamId = options.secretsYamlFile
+        ? await loadBotSecretsDeclarationFromYaml(options.secretsYamlFile)
+        : undefined;
+
+      const result = await deps.botSessionService.syncBotsFromDeclaration({
+        accounts,
+        prompts: deps.buildPrompts(),
+        ...(secretsBySteamId ? { secretsBySteamId } : {}),
+      });
+
+      console.table(result.rows);
+      console.table([
+        {
+          total: result.total,
+          succeeded: result.succeeded,
+          failed: result.failed,
+        },
+      ]);
+    });
+
+  bot
+    .command("sync-secrets")
+    .requiredOption("--from-yaml-file <path>", "Bot secret YAML file path")
+    .action(async (options: BotSyncOptions) => {
+      const secretsBySteamId = await loadBotSecretsDeclarationFromYaml(options.fromYamlFile);
+      const result = await deps.botSessionService.syncBotSecretsFromDeclaration({
+        secretsBySteamId,
+      });
+
+      console.table(result.rows);
+      console.table([
+        {
+          total: result.total,
+          updated: result.updated,
+          failed: result.failed,
+        },
+      ]);
+    });
+
+  bot
     .command("refresh")
     .option("--app-id <appId>", "App ID", "440")
     .option("--context-id <contextId>", "Context ID", "2")
@@ -105,5 +186,40 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
         await deps.runRefreshOnce(options);
         await deps.sleep(intervalMs);
       }
+    });
+
+  bot
+    .command("trade")
+    .requiredOption("--from <from>", "Source bot name")
+    .requiredOption("--to <to>", "Target bot name")
+    .option("--to-trade-token <toTradeToken>", "Recipient bot trade-offer token")
+    .requiredOption("--sku <sku>", "TF2-style SKU (defindex + attributes)")
+    .requiredOption("--amount <amount>", "Quantity to send")
+    .option("--app-id <appId>", "App ID", "440")
+    .option("--context-id <contextId>", "Context ID", "2")
+    .option("--message <message>", "Optional message for the trade offer")
+    .action(async (options: BotTradeOptions) => {
+      const tradeInput = {
+        fromBotName: options.from,
+        toBotName: options.to,
+        ...(options.toTradeToken ? { toBotTradeToken: options.toTradeToken } : {}),
+        appId: Number(options.appId),
+        contextId: options.contextId,
+        sku: options.sku,
+        amount: Number(options.amount),
+        ...(options.message ? { message: options.message } : {}),
+      };
+      const result = await deps.botTradeService.createOffer(tradeInput);
+
+      console.table([
+        {
+          tradeOfferId: result.tradeOfferId,
+          from: result.fromBotName,
+          to: result.toBotName,
+          sku: result.sku,
+          amount: result.requestedAmount,
+        },
+      ]);
+      console.log(`Trade offer created: ${result.offerUrl}`);
     });
 }

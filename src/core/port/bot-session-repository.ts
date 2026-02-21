@@ -3,6 +3,8 @@ import type { Bot, BotSession } from "../bot/bot-session";
 export interface BotSessionRepository {
   createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot>;
   findBotByName(name: string): Promise<Bot | null>;
+  findBotBySteamId(steamId: string): Promise<Bot | null>;
+  updateBotIdentity(input: { botId: string; name: string; accountName: string }): Promise<Bot>;
   listBots(): Promise<Bot[]>;
   listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>>;
   upsertSession(input: {
@@ -13,4 +15,9 @@ export interface BotSessionRepository {
   }): Promise<BotSession>;
   findSessionByBotId(botId: string): Promise<BotSession | null>;
   markSessionChecked(botId: string, checkedAt: Date): Promise<void>;
+  setBotTradeToken(botName: string, tradeToken: string): Promise<Bot>;
+  setBotTradeSecretsBySteamId(
+    steamId: string,
+    secrets: { sharedSecret: string | null; identitySecret: string | null }
+  ): Promise<Bot>;
 }

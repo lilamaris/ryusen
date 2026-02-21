@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import type { PrismaBotInventoryRepository } from "../../adapter/persistence/prisma/prisma-bot-inventory-repository";
 import type { PrismaBotSessionRepository } from "../../adapter/persistence/prisma/prisma-bot-session-repository";
+import { getBotTradeAutomationMode } from "../../core/bot/bot-session";
 import type { ClusterStockService } from "../../core/usecase/cluster-stock-service";
 import type { BotSessionService } from "../../core/usecase/bot-session-service";
 
@@ -40,6 +41,8 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
         name: item.name,
         steamId: item.steamId,
         accountName: item.accountName,
+        hasTradeToken: Boolean(item.tradeToken),
+        tradeAutomation: getBotTradeAutomationMode(item),
       }))
     );
   });
@@ -57,6 +60,7 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
             accountName: status.bot.accountName,
             hasSession: status.hasSession,
             isValid: status.isValid,
+            tradeAutomation: getBotTradeAutomationMode(status.bot),
             expiresAt: status.expiresAt?.toISOString() ?? null,
             lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
           },
@@ -72,6 +76,7 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
           accountName: status.bot.accountName,
           hasSession: status.hasSession,
           isValid: status.isValid,
+          tradeAutomation: getBotTradeAutomationMode(status.bot),
           expiresAt: status.expiresAt?.toISOString() ?? null,
           lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
         }))

@@ -11,16 +11,16 @@ Detailed behavior, flow, and CLI usage live in module docs.
 
 - Bot identity/session/authentication
   - Module doc: `docs/module/bot-session.md`
-  - Main commands: `bot create`, `bot connect`, `bot reauth`, `ls sessions`, `ls bots`
+  - Main commands: `bot create`, `bot connect`, `bot reauth`, `bot sync`, `bot sync-secrets`, `ls sessions`, `ls bots`
 - Inventory refresh and holdings persistence
   - Module doc: `docs/module/inventory-refresh.md`
   - Main commands: `bot refresh`, `bot watch`, `ls items`, `ls stock`
 - Inventory query/view rendering (CLI/TUI/Web)
   - Module doc: `docs/module/inventory-view.md`
   - Main commands: `view cli`, `view tui`, `view web`
-- Control-bot consolidation planning and manual settlement
-  - Module doc: `docs/module/trade-consolidation.md`
-  - Main commands: `trade consolidate`, `trade jobs`, `trade leg-complete`, `trade leg-fail`
+- Bot-to-bot trade offers
+  - Module doc: `docs/module/bot-trade.md`
+  - Main commands: `bot trade`, `bot set-trade-token`
 
 If your task spans multiple features, read all relevant module docs.
 

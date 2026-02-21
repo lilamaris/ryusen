@@ -18,6 +18,20 @@ class FakeRepository implements BotSessionRepository {
     return Promise.resolve(this.bots.find((bot) => bot.name === name) ?? null);
   }
 
+  findBotBySteamId(steamId: string): Promise<Bot | null> {
+    return Promise.resolve(this.bots.find((bot) => bot.steamId === steamId) ?? null);
+  }
+
+  updateBotIdentity(input: { botId: string; name: string; accountName: string }): Promise<Bot> {
+    const bot = this.bots.find((item) => item.id === input.botId);
+    if (!bot) {
+      return Promise.reject(new Error("not used"));
+    }
+    bot.name = input.name;
+    bot.accountName = input.accountName;
+    return Promise.resolve(bot);
+  }
+
   listBots(): Promise<Bot[]> {
     return Promise.resolve(this.bots);
   }
@@ -42,6 +56,14 @@ class FakeRepository implements BotSessionRepository {
   markSessionChecked(): Promise<void> {
     return Promise.resolve();
   }
+
+  setBotTradeToken(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
+
+  setBotTradeSecretsBySteamId(): Promise<Bot> {
+    return Promise.reject(new Error("not used"));
+  }
 }
 
 void test("resolveByBotName returns skip reason when bot not found", async () => {
@@ -61,7 +83,7 @@ void test("resolveByBotName returns skip reason when bot not found", async () =>
 });
 
 void test("resolveByBotName returns authenticated query when valid session exists", async () => {
-  const bot: Bot = { id: "b1", name: "alpha", steamId: "123", accountName: "alpha_acc" };
+  const bot: Bot = { id: "b1", name: "alpha", steamId: "123", accountName: "alpha_acc", tradeToken: null };
   const session: BotSession = {
     botId: "b1",
     sessionToken: "token",
@@ -97,9 +119,9 @@ void test("resolveByBotName returns authenticated query when valid session exist
 
 void test("resolveAllBots can fallback to public query for expired/missing sessions", async () => {
   const bots: Bot[] = [
-    { id: "b1", name: "alpha", steamId: "111", accountName: "a" },
-    { id: "b2", name: "beta", steamId: "222", accountName: "b" },
-    { id: "b3", name: "gamma", steamId: "333", accountName: "c" },
+    { id: "b1", name: "alpha", steamId: "111", accountName: "a", tradeToken: null },
+    { id: "b2", name: "beta", steamId: "222", accountName: "b", tradeToken: null },
+    { id: "b3", name: "gamma", steamId: "333", accountName: "c", tradeToken: null },
   ];
 
   const sessionsByBotId: Record<string, BotSession | null> = {

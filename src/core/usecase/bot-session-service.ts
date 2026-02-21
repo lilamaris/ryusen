@@ -3,6 +3,41 @@ import type { BotSessionRepository } from "../port/bot-session-repository";
 import type { SteamAuthGateway, SteamGuardPrompts } from "../port/steam-auth-gateway";
 import type { DebugLogger } from "./debug-logger";
 
+export type BotDeclarationAccount = {
+  alias: string;
+  steamId: string;
+  account: string;
+  password: string;
+};
+
+export type BotTradeSecretsDeclaration = {
+  sharedSecret?: string;
+  identitySecret?: string;
+};
+
+export type BotSyncResult = {
+  total: number;
+  succeeded: number;
+  failed: number;
+  rows: Array<{
+    alias: string;
+    steamId: string;
+    status: "ok" | "error";
+    message: string;
+  }>;
+};
+
+export type BotSecretSyncResult = {
+  total: number;
+  updated: number;
+  failed: number;
+  rows: Array<{
+    steamId: string;
+    status: "updated" | "error";
+    message: string;
+  }>;
+};
+
 export class BotSessionService {
   constructor(
     private readonly repository: BotSessionRepository,
@@ -118,6 +153,144 @@ export class BotSessionService {
     });
   }
 
+  async setTradeToken(input: { botName: string; tradeToken: string }): Promise<void> {
+    const tradeToken = input.tradeToken.trim();
+    if (!tradeToken) {
+      throw new Error("tradeToken must not be empty");
+    }
+
+    this.debug("setTradeToken:start", { botName: input.botName });
+    const bot = await this.repository.findBotByName(input.botName);
+    if (!bot) {
+      throw new Error(`Bot not found: ${input.botName}`);
+    }
+
+    await this.repository.setBotTradeToken(input.botName, tradeToken);
+    this.debug("setTradeToken:done", { botName: input.botName });
+  }
+
+  async syncBotsFromDeclaration(input: {
+    accounts: BotDeclarationAccount[];
+    prompts: SteamGuardPrompts;
+    secretsBySteamId?: Record<string, BotTradeSecretsDeclaration>;
+  }): Promise<BotSyncResult> {
+    const rows: BotSyncResult["rows"] = [];
+    let succeeded = 0;
+
+    for (const item of input.accounts) {
+      const alias = item.alias.trim();
+      const steamId = item.steamId.trim();
+      const accountName = item.account.trim();
+      const password = item.password.trim();
+
+      if (!alias || !steamId || !accountName || !password) {
+        rows.push({
+          alias: item.alias,
+          steamId: item.steamId,
+          status: "error",
+          message: "alias, steamId, account, password are required",
+        });
+        continue;
+      }
+
+      try {
+        const bot = await this.ensureBotIdentity({
+          alias,
+          steamId,
+          accountName,
+        });
+
+        const secrets = input.secretsBySteamId?.[steamId];
+        if (secrets) {
+          await this.repository.setBotTradeSecretsBySteamId(steamId, {
+            sharedSecret: secrets.sharedSecret?.trim() || null,
+            identitySecret: secrets.identitySecret?.trim() || null,
+          });
+        }
+
+        const authResult = await this.steamAuthGateway.authenticateWithCredentials({
+          accountName,
+          password,
+          prompts: input.prompts,
+        });
+
+        await this.repository.upsertSession({
+          botId: bot.id,
+          sessionToken: authResult.sessionToken,
+          webCookies: authResult.webCookies,
+          expiresAt: authResult.expiresAt,
+        });
+
+        rows.push({
+          alias,
+          steamId,
+          status: "ok",
+          message: `session updated (expires ${authResult.expiresAt.toISOString()})`,
+        });
+        succeeded += 1;
+      } catch (error: unknown) {
+        rows.push({
+          alias,
+          steamId,
+          status: "error",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      total: input.accounts.length,
+      succeeded,
+      failed: input.accounts.length - succeeded,
+      rows,
+    };
+  }
+
+  async syncBotSecretsFromDeclaration(input: {
+    secretsBySteamId: Record<string, BotTradeSecretsDeclaration>;
+  }): Promise<BotSecretSyncResult> {
+    const rows: BotSecretSyncResult["rows"] = [];
+    const steamIds = Object.keys(input.secretsBySteamId);
+    let updated = 0;
+
+    for (const steamId of steamIds) {
+      try {
+        const bot = await this.repository.findBotBySteamId(steamId);
+        if (!bot) {
+          throw new Error(`Bot not found for steamId: ${steamId}`);
+        }
+
+        const secrets = input.secretsBySteamId[steamId];
+        if (!secrets) {
+          throw new Error(`Secrets entry not found for steamId: ${steamId}`);
+        }
+        await this.repository.setBotTradeSecretsBySteamId(steamId, {
+          sharedSecret: secrets.sharedSecret?.trim() || null,
+          identitySecret: secrets.identitySecret?.trim() || null,
+        });
+        rows.push({
+          steamId,
+          status: "updated",
+          message: "secrets updated",
+        });
+        updated += 1;
+      } catch (error: unknown) {
+        rows.push({
+          steamId,
+          status: "error",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      total: steamIds.length,
+      updated,
+      failed: steamIds.length - updated,
+      rows,
+    };
+  }
+
   async checkBotSession(botName: string, now: Date = new Date()): Promise<BotSessionStatus> {
     this.debug("checkBotSession:start", { botName, now: now.toISOString() });
 
@@ -205,5 +378,35 @@ export class BotSessionService {
       expiresAt: session.expiresAt,
       lastCheckedAt: now,
     };
+  }
+
+  private async ensureBotIdentity(input: {
+    alias: string;
+    steamId: string;
+    accountName: string;
+  }): Promise<Bot> {
+    const byAlias = await this.repository.findBotByName(input.alias);
+    if (byAlias && byAlias.steamId !== input.steamId) {
+      throw new Error(`Alias already mapped to another steamId: ${input.alias}`);
+    }
+
+    const bySteamId = await this.repository.findBotBySteamId(input.steamId);
+    if (!bySteamId) {
+      return this.repository.createBot({
+        name: input.alias,
+        steamId: input.steamId,
+        accountName: input.accountName,
+      });
+    }
+
+    if (bySteamId.name === input.alias && bySteamId.accountName === input.accountName) {
+      return bySteamId;
+    }
+
+    return this.repository.updateBotIdentity({
+      botId: bySteamId.id,
+      name: input.alias,
+      accountName: input.accountName,
+    });
   }
 }

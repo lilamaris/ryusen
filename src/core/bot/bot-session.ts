@@ -3,6 +3,9 @@ export type Bot = {
   name: string;
   steamId: string;
   accountName: string;
+  tradeToken: string | null;
+  sharedSecret?: string | null;
+  identitySecret?: string | null;
 };
 
 export type BotSession = {
@@ -20,3 +23,7 @@ export type BotSessionStatus = {
   expiresAt: Date | null;
   lastCheckedAt: Date | null;
 };
+
+export function getBotTradeAutomationMode(bot: Bot): "AUTO" | "MANUAL" {
+  return bot.sharedSecret ? "AUTO" : "MANUAL";
+}

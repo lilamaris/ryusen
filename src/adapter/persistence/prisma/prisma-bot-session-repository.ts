@@ -11,6 +11,9 @@ type BotRecord = {
   name: string;
   steamId: string;
   accountName: string;
+  tradeToken: string | null;
+  sharedSecret: string | null;
+  identitySecret: string | null;
 };
 
 function toBot(record: BotRecord): Bot {
@@ -19,6 +22,9 @@ function toBot(record: BotRecord): Bot {
     name: record.name,
     steamId: record.steamId,
     accountName: record.accountName,
+    tradeToken: record.tradeToken,
+    sharedSecret: record.sharedSecret,
+    identitySecret: record.identitySecret,
   };
 }
 
@@ -52,6 +58,9 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         name: true,
         steamId: true,
         accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "createBot:done", { id: record.id, name: record.name });
@@ -67,9 +76,55 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         name: true,
         steamId: true,
         accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
       },
     });
     return record ? toBot(record) : null;
+  }
+
+  async findBotBySteamId(steamId: string): Promise<Bot | null> {
+    debugLog("PrismaBotSessionRepository", "findBotBySteamId", { steamId });
+    const record = await this.prisma.bot.findUnique({
+      where: { steamId },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
+      },
+    });
+    return record ? toBot(record) : null;
+  }
+
+  async updateBotIdentity(input: { botId: string; name: string; accountName: string }): Promise<Bot> {
+    debugLog("PrismaBotSessionRepository", "updateBotIdentity:start", {
+      botId: input.botId,
+      name: input.name,
+      accountName: input.accountName,
+    });
+    const record = await this.prisma.bot.update({
+      where: { id: input.botId },
+      data: {
+        name: input.name,
+        accountName: input.accountName,
+      },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
+      },
+    });
+    debugLog("PrismaBotSessionRepository", "updateBotIdentity:done", { botId: input.botId });
+    return toBot(record);
   }
 
   async listBots(): Promise<Bot[]> {
@@ -81,6 +136,9 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         name: true,
         steamId: true,
         accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
       },
     });
     debugLog("PrismaBotSessionRepository", "listBots:done", { count: records.length });
@@ -96,6 +154,9 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         name: true,
         steamId: true,
         accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
         session: true,
       },
     });
@@ -149,5 +210,53 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
       where: { botId },
       data: { lastCheckedAt: checkedAt },
     });
+  }
+
+  async setBotTradeToken(botName: string, tradeToken: string): Promise<Bot> {
+    debugLog("PrismaBotSessionRepository", "setBotTradeToken:start", { botName });
+    const record = await this.prisma.bot.update({
+      where: { name: botName },
+      data: { tradeToken },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
+      },
+    });
+    debugLog("PrismaBotSessionRepository", "setBotTradeToken:done", { botName });
+    return toBot(record);
+  }
+
+  async setBotTradeSecretsBySteamId(
+    steamId: string,
+    secrets: { sharedSecret: string | null; identitySecret: string | null }
+  ): Promise<Bot> {
+    debugLog("PrismaBotSessionRepository", "setBotTradeSecretsBySteamId:start", {
+      steamId,
+      hasSharedSecret: Boolean(secrets.sharedSecret),
+      hasIdentitySecret: Boolean(secrets.identitySecret),
+    });
+    const record = await this.prisma.bot.update({
+      where: { steamId },
+      data: {
+        sharedSecret: secrets.sharedSecret,
+        identitySecret: secrets.identitySecret,
+      },
+      select: {
+        id: true,
+        name: true,
+        steamId: true,
+        accountName: true,
+        tradeToken: true,
+        sharedSecret: true,
+        identitySecret: true,
+      },
+    });
+    debugLog("PrismaBotSessionRepository", "setBotTradeSecretsBySteamId:done", { steamId });
+    return toBot(record);
   }
 }
