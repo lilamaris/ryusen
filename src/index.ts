@@ -2,7 +2,7 @@ import { Command } from "commander";
 import {
   SteamInventoryProvider,
   type SteamInventoryQuery,
-} from "./adapter/stream/steam-inventory-provider";
+} from "./adapter/steam/steam-inventory-provider";
 import { runCli } from "./presentation/cli";
 import { runTui } from "./presentation/tui";
 import { runWebServer } from "./presentation/web";

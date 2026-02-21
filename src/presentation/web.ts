@@ -1,6 +1,6 @@
 import express from "express";
 import type { InventoryProvider } from "../core/provider/inventory-provider";
-import type { SteamInventoryQuery } from "../adapter/stream/steam-inventory-provider";
+import type { SteamInventoryQuery } from "../adapter/steam/steam-inventory-provider";
 
 function pageTemplate(content: string): string {
   return `<!doctype html>

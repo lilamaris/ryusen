@@ -1,6 +1,6 @@
 import blessed from "blessed";
 import type { InventoryProvider } from "../core/provider/inventory-provider";
-import type { SteamInventoryQuery } from "../adapter/stream/steam-inventory-provider";
+import type { SteamInventoryQuery } from "../adapter/steam/steam-inventory-provider";
 
 export async function runTui(
   provider: InventoryProvider<SteamInventoryQuery>,

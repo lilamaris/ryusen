@@ -7,7 +7,7 @@
 - `src/core/provider/inventory-provider.ts`
   - Defines core inventory contract types.
   - `InventoryItem` and `InventoryProvider<TQuery>` live here.
-- `src/adapter/stream/steam-inventory-provider.ts`
+- `src/adapter/steam/steam-inventory-provider.ts`
   - Contains `SteamInventoryProvider` implementation for Steam Web inventory API.
   - Contains Steam-specific query/type mapping (`SteamInventoryQuery`, paging response mapping).
 - `src/presentation/`
@@ -24,5 +24,5 @@
 - `index.ts` assembles concrete adapter + presentation.
 
 ## Notes
-- Current adapter path is `adapter/stream` as requested.
+- Current adapter path is `adapter/steam` as requested.
 - If more providers are added later, place each provider implementation under `src/adapter/<provider>/`.
