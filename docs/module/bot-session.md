@@ -134,6 +134,9 @@ npm run dev -- ls bots
 npm run dev -- bot sync --from-yaml-file <bots.yaml> [--secrets-yaml-file <secrets.yaml>]
 ```
 
+- `--from-yaml-file` / `--secrets-yaml-file` 는 프로젝트 루트 기준 `.ryusen/secret` 내부 파일명으로 해석됨.
+- 예: `--from-yaml-file bots.yaml` 는 `.ryusen/secret/bots.yaml` 를 읽음.
+
 `bots.yaml`:
 
 ```yaml

@@ -148,8 +148,8 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
 
   bot
     .command("sync")
-    .requiredOption("--from-yaml-file <path>", "Bot account YAML file path")
-    .option("--secrets-yaml-file <path>", "Bot secret YAML file path")
+    .requiredOption("--from-yaml-file <fileName>", "Bot account YAML file name in .ryusen/secret")
+    .option("--secrets-yaml-file <fileName>", "Bot secret YAML file name in .ryusen/secret")
     .action(async (options: BotSyncOptions) => {
       const accounts = await loadBotAccountDeclarationFromYaml(options.fromYamlFile);
       const secretsBySteamId = options.secretsYamlFile
@@ -174,7 +174,7 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
 
   bot
     .command("sync-secrets")
-    .requiredOption("--from-yaml-file <path>", "Bot secret YAML file path")
+    .requiredOption("--from-yaml-file <fileName>", "Bot secret YAML file name in .ryusen/secret")
     .action(async (options: BotSyncOptions) => {
       const secretsBySteamId = await loadBotSecretsDeclarationFromYaml(options.fromYamlFile);
       const result = await deps.botSessionService.syncBotSecretsFromDeclaration({

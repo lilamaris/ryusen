@@ -1,6 +1,23 @@
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { parse } from "yaml";
 import type { BotDeclarationAccount, BotTradeSecretsDeclaration } from "../../core/usecase/bot-session-service";
+
+const SECRET_BASE_DIR = path.resolve(process.cwd(), ".ryusen/secret");
+
+function resolveSecretFilePath(fileName: string): string {
+  const trimmed = fileName.trim();
+  if (!trimmed) {
+    throw new Error("YAML file name must not be empty");
+  }
+
+  const resolved = path.resolve(SECRET_BASE_DIR, trimmed);
+  const relative = path.relative(SECRET_BASE_DIR, resolved);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`YAML file must be inside ${SECRET_BASE_DIR}`);
+  }
+  return resolved;
+}
 
 function assertRecord(value: unknown, message: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -18,7 +35,7 @@ function asOptionalString(value: unknown): string | undefined {
 }
 
 export async function loadBotAccountDeclarationFromYaml(path: string): Promise<BotDeclarationAccount[]> {
-  const raw = await readFile(path, "utf-8");
+  const raw = await readFile(resolveSecretFilePath(path), "utf-8");
   const parsed = parse(raw) as unknown;
   const root = Array.isArray(parsed) ? { bots: parsed } : assertRecord(parsed, "Invalid YAML root");
   const botsRaw = root.bots;
@@ -47,7 +64,7 @@ export async function loadBotAccountDeclarationFromYaml(path: string): Promise<B
 export async function loadBotSecretsDeclarationFromYaml(
   path: string
 ): Promise<Record<string, BotTradeSecretsDeclaration>> {
-  const raw = await readFile(path, "utf-8");
+  const raw = await readFile(resolveSecretFilePath(path), "utf-8");
   const parsed = parse(raw) as unknown;
   const root = assertRecord(parsed, "Invalid YAML root");
   const secretsRoot = root.secrets ? assertRecord(root.secrets, "secrets must be an object") : root;
