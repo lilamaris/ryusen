@@ -19,7 +19,7 @@
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma 기반 `Item`, `BotHasItem` 갱신 구현
 - `src/index.ts`
-  - CLI 명령(`bot refresh-once`, `bot refresh-loop`, `bot item-holders`) 연결
+  - CLI 명령(`bot refresh`, `bot watch`, `ls items`) 연결
 
 ## Data Model
 
@@ -42,31 +42,34 @@
 4. 봇별 아이템 스냅샷을 `replaceBotHoldings`로 치환 저장
 5. 결과 집계(`updated/skipped/failed`) 출력
 
+참고: `view cli/tui` 경로는 `BotInventoryQueryService`에서 `--name/--all` 대상을 해석하고,
+세션 정책(필수 또는 공개 fallback)을 적용한 뒤 동일 adapter를 사용합니다.
+
 ## CLI Usage
 
 ### 1회 갱신
 
 ```bash
-npm run dev -- bot refresh-once --app-id 440 --context-id 2
+npm run dev -- bot refresh --app-id 440 --context-id 2
 ```
 
 ### 주기 갱신 (기본 120초)
 
 ```bash
-npm run dev -- bot refresh-loop --app-id 440 --context-id 2 --interval-seconds 120
+npm run dev -- bot watch --app-id 440 --context-id 2 --interval-seconds 120
 ```
 
 ### 특정 아이템 보유 봇 조회
 
 ```bash
-npm run dev -- bot item-holders --app-id 440 --context-id 2 --sku <tf2-sku>
+npm run dev -- ls items --app-id 440 --context-id 2 --sku <tf2-sku>
 ```
 
 ## Troubleshooting
 
 - 봇이 계속 `skipped`로 나오는 경우
-  - `bot auth`로 세션 재인증해서 `webCookies`를 갱신하세요.
+  - `bot reauth`로 세션 재인증해서 `webCookies`를 갱신하세요.
 - `Steam inventory request failed: 403 Forbidden`
   - 세션 만료/쿠키 무효 가능성이 큽니다. 재인증 후 재시도하세요.
-- 조회는 되지만 `item-holders` 결과가 비어 있는 경우
+- 조회는 되지만 `ls items` 결과가 비어 있는 경우
   - `sku`를 정확히 입력했는지 확인하세요. (`def_index` 누락 아이템은 `raw-<classid_instanceid>` 형식)

@@ -20,9 +20,11 @@
 - `src/core/port/steam-auth-gateway.ts`
   - Auth gateway port for Steam credential + guard-code login.
 - `src/core/usecase/bot-session-service.ts`
-  - Use case for bot register, add+authenticate, re-authenticate, and session status checks.
+  - Use case for bot create/connect/reauth and session status checks.
 - `src/core/usecase/bot-inventory-refresh-service.ts`
   - Use case for periodic bot inventory refresh and persistence.
+- `src/core/usecase/bot-inventory-query-service.ts`
+  - Resolves inventory query targets from managed bots (`--name`/`--all`) with session/fallback policy.
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Single Steam inventory adapter for both public and authenticated requests.
   - Uses `InventoryProvider` contract and optional web cookies from query.
@@ -64,30 +66,36 @@
 
 ## Session Management Flow
 
-- `bot cli`
+- `view cli`
   - Renders one inventory query in console table format.
-  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
-- `bot tui`
+  - Resolves target bots by `--name` or `--all` and then renders merged results.
+  - Skipped/failed bots are reported with reasons.
+- `view tui`
   - Renders one inventory query in terminal UI format.
-  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
-- `bot web`
+  - Resolves target bots by `--name` or `--all` and renders merged results.
+  - Supports optional public fallback when session is missing/expired.
+- `view web`
   - Starts web UI server for interactive inventory query.
   - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
 
-- `bot add`
+- `bot create`
+  - Registers managed bot identity (`name`, `steamId`, `accountName`) without authentication.
+- `bot connect`
   - Authenticates via Steam credentials first, then creates/updates bot session state.
   - If Steam Guard is required, OTP or confirmation prompt is requested interactively.
-- `bot auth`
+- `bot reauth`
   - Re-authenticates existing bot using stored `accountName` and prompted password/OTP.
   - Refreshes persisted session data.
-- `bot session-check`
+- `ls sessions`
   - Returns current validity of one bot or all bots using persisted session expiry metadata.
   - Batch check path uses one repository read for bots+sessions, then updates `lastCheckedAt` per existing session.
-- `bot refresh-once`
+- `ls bots`
+  - Lists managed bot identities.
+- `bot refresh`
   - Refreshes all managed bot inventories once (default `appId=440`, `contextId=2`) using authenticated cookies.
-- `bot refresh-loop`
+- `bot watch`
   - Runs periodic refresh (`--interval-seconds`, default 120).
-- `bot item-holders`
+- `ls items`
   - Lists which bots currently hold a given `sku`.
 
 ## Update Policy

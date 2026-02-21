@@ -6,17 +6,19 @@ import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-
 import { PrismaBotInventoryRepository } from "./adapter/persistence/prisma/prisma-bot-inventory-repository";
 import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "./adapter/steam/steam-authenticated-inventory-provider";
-import type { InventoryQuery } from "./core/provider/inventory-provider";
 import { BotInventoryRefreshService } from "./core/usecase/bot-inventory-refresh-service";
+import { BotInventoryQueryService, type InventorySkipReason } from "./core/usecase/bot-inventory-query-service";
 import { BotSessionService } from "./core/usecase/bot-session-service";
-import { runCli } from "./presentation/cli";
-import { runTui } from "./presentation/tui";
+import { renderCliByBots } from "./presentation/cli";
+import { runTuiByBots } from "./presentation/tui";
 import { runWebServer } from "./presentation/web";
 
-type QueryOptions = {
-  steamId: string;
+type BotInventoryViewOptions = {
+  name?: string;
+  all?: boolean;
   appId: string;
   contextId: string;
+  allowPublicFallback?: boolean;
 };
 
 type BotRegisterOptions = {
@@ -31,7 +33,7 @@ type BotAuthOptions = {
   accountName?: string;
 };
 
-type BotCheckOptions = {
+type SessionListOptions = {
   name?: string;
 };
 
@@ -48,16 +50,115 @@ type BotItemHoldersOptions = BotRefreshOptions & {
   sku: string;
 };
 
-function getQueryOptions(options: QueryOptions): InventoryQuery {
-  if (!options.steamId) {
-    throw new Error("--steam-id is required");
+type BotInventoryFetchResult = {
+  inventories: Array<{
+    botName: string;
+    items: Array<{ name: string; marketHashName: string; quantity: number; sku: string }>;
+  }>;
+  skipped: Array<{ botName: string; reason: InventorySkipReason }>;
+  failures: Array<{ botName: string; reason: string }>;
+};
+
+function toSkipReasonText(reason: InventorySkipReason): string {
+  if (reason === "bot_not_found") {
+    return "bot not found";
+  }
+  if (reason === "no_session") {
+    return "no session";
+  }
+  if (reason === "expired_session") {
+    return "session expired";
+  }
+  return "missing web cookies";
+}
+
+function parseInventoryViewOptions(options: BotInventoryViewOptions): {
+  appId: number;
+  contextId: string;
+  name: string | undefined;
+  all: boolean;
+  allowPublicFallback: boolean;
+} {
+  if (options.name && options.all) {
+    throw new Error("Use either --name or --all, not both.");
+  }
+
+  if (!options.name && !options.all) {
+    throw new Error("One of --name or --all is required.");
   }
 
   return {
-    steamId: options.steamId,
     appId: Number(options.appId),
     contextId: options.contextId,
+    name: options.name,
+    all: Boolean(options.all),
+    allowPublicFallback: Boolean(options.allowPublicFallback),
   };
+}
+
+async function fetchBotInventories(options: BotInventoryViewOptions): Promise<BotInventoryFetchResult> {
+  const parsed = parseInventoryViewOptions(options);
+  const resolved = parsed.all
+    ? await botInventoryQueryService.resolveAllBots({
+        appId: parsed.appId,
+        contextId: parsed.contextId,
+        allowPublicFallback: parsed.allowPublicFallback,
+      })
+    : await botInventoryQueryService.resolveByBotName({
+        botName: parsed.name ?? "",
+        appId: parsed.appId,
+        contextId: parsed.contextId,
+        allowPublicFallback: parsed.allowPublicFallback,
+      });
+
+  const inventories: BotInventoryFetchResult["inventories"] = [];
+  const failures: BotInventoryFetchResult["failures"] = [];
+
+  for (const target of resolved.targets) {
+    try {
+      const items = await steamProvider.listItems(target.query);
+      inventories.push({
+        botName: target.botName,
+        items: items.map((item) => ({
+          name: item.name,
+          marketHashName: item.marketHashName,
+          quantity: item.quantity,
+          sku: item.sku,
+        })),
+      });
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      failures.push({ botName: target.botName, reason });
+    }
+  }
+
+  return {
+    inventories,
+    skipped: resolved.skipped,
+    failures,
+  };
+}
+
+function printInventoryWarnings(result: BotInventoryFetchResult): void {
+  if (result.skipped.length > 0) {
+    console.table(
+      result.skipped.map((item) => ({
+        bot: item.botName,
+        status: "skipped",
+        reason: toSkipReasonText(item.reason),
+      }))
+    );
+  }
+
+  if (result.failures.length > 0) {
+    console.table(
+      result.failures.map((item) => ({
+        bot: item.botName,
+        status: "failed",
+        reason: item.reason,
+      }))
+    );
+  }
 }
 
 async function promptText(question: string): Promise<string> {
@@ -115,41 +216,19 @@ const botInventoryRefreshService = new BotInventoryRefreshService(
   steamProvider,
   botInventoryRepository
 );
+const botInventoryQueryService = new BotInventoryQueryService(botSessionRepository);
 
 program
   .name("ryusen")
-  .description("Steam inventory viewer")
+  .description("Steam bot inventory and session manager")
   .showHelpAfterError();
 
-const bot = program.command("bot").description("Manage bot accounts and sessions");
+const bot = program.command("bot").description("Mutating bot operations");
+const ls = program.command("ls").description("List resources");
+const view = program.command("view").description("Interactive and formatted inventory views");
 
 bot
-  .command("cli")
-  .requiredOption("--steam-id <steamId>", "SteamID64")
-  .option("--app-id <appId>", "App ID", "730")
-  .option("--context-id <contextId>", "Context ID", "2")
-  .action(async (options: QueryOptions) => {
-    await runCli(steamProvider, getQueryOptions(options));
-  });
-
-bot
-  .command("tui")
-  .requiredOption("--steam-id <steamId>", "SteamID64")
-  .option("--app-id <appId>", "App ID", "730")
-  .option("--context-id <contextId>", "Context ID", "2")
-  .action(async (options: QueryOptions) => {
-    await runTui(steamProvider, getQueryOptions(options));
-  });
-
-bot
-  .command("web")
-  .option("--port <port>", "Web server port", "3000")
-  .action(async (options: { port: string }) => {
-    await runWebServer(steamProvider, Number(options.port));
-  });
-
-bot
-  .command("register")
+  .command("create")
   .requiredOption("--name <name>", "Bot name")
   .requiredOption("--steam-id <steamId>", "SteamID64")
   .requiredOption("--account-name <accountName>", "Steam login account name")
@@ -163,7 +242,7 @@ bot
   });
 
 bot
-  .command("add")
+  .command("connect")
   .requiredOption("--name <name>", "Bot name")
   .requiredOption("--steam-id <steamId>", "SteamID64")
   .requiredOption("--account-name <accountName>", "Steam login account name")
@@ -183,7 +262,7 @@ bot
   });
 
 bot
-  .command("auth")
+  .command("reauth")
   .requiredOption("--name <name>", "Bot name")
   .action(async (options: BotAuthOptions) => {
     const password = await promptText("Steam password: ");
@@ -199,9 +278,52 @@ bot
   });
 
 bot
-  .command("session-check")
-  .option("--name <name>", "Bot name (omit to check all bots)")
-  .action(async (options: BotCheckOptions) => {
+  .command("refresh")
+  .option("--app-id <appId>", "App ID", "440")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .action(async (options: BotRefreshOptions) => {
+    await runRefreshOnce(options);
+  });
+
+bot
+  .command("watch")
+  .option("--app-id <appId>", "App ID", "440")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .option("--interval-seconds <intervalSeconds>", "Refresh interval in seconds", "120")
+  .action(async (options: BotRefreshLoopOptions) => {
+    const intervalMs = Number(options.intervalSeconds) * 1000;
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+      throw new Error("--interval-seconds must be a positive number");
+    }
+
+    while (true) {
+      await runRefreshOnce(options);
+      await sleep(intervalMs);
+    }
+  });
+
+ls
+  .command("bots")
+  .action(async () => {
+    const bots = await botSessionRepository.listBots();
+    if (bots.length === 0) {
+      console.log("No bots found.");
+      return;
+    }
+
+    console.table(
+      bots.map((item) => ({
+        name: item.name,
+        steamId: item.steamId,
+        accountName: item.accountName,
+      }))
+    );
+  });
+
+ls
+  .command("sessions")
+  .option("--name <name>", "Bot name (omit to list all bots)")
+  .action(async (options: SessionListOptions) => {
     if (options.name) {
       const status = await botSessionService.checkBotSession(options.name);
       console.table([
@@ -232,33 +354,8 @@ bot
     );
   });
 
-bot
-  .command("refresh-once")
-  .option("--app-id <appId>", "App ID", "440")
-  .option("--context-id <contextId>", "Context ID", "2")
-  .action(async (options: BotRefreshOptions) => {
-    await runRefreshOnce(options);
-  });
-
-bot
-  .command("refresh-loop")
-  .option("--app-id <appId>", "App ID", "440")
-  .option("--context-id <contextId>", "Context ID", "2")
-  .option("--interval-seconds <intervalSeconds>", "Refresh interval in seconds", "120")
-  .action(async (options: BotRefreshLoopOptions) => {
-    const intervalMs = Number(options.intervalSeconds) * 1000;
-    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
-      throw new Error("--interval-seconds must be a positive number");
-    }
-
-    while (true) {
-      await runRefreshOnce(options);
-      await sleep(intervalMs);
-    }
-  });
-
-bot
-  .command("item-holders")
+ls
+  .command("items")
   .requiredOption("--sku <sku>", "TF2-style SKU (defindex + attributes)")
   .option("--app-id <appId>", "App ID", "440")
   .option("--context-id <contextId>", "Context ID", "2")
@@ -282,6 +379,39 @@ bot
         lastSeenAt: holder.lastSeenAt.toISOString(),
       }))
     );
+  });
+
+view
+  .command("cli")
+  .option("--name <name>", "Bot name")
+  .option("--all", "Fetch inventories for all managed bots")
+  .option("--app-id <appId>", "App ID", "730")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .option("--allow-public-fallback", "If session is invalid, try public inventory query")
+  .action(async (options: BotInventoryViewOptions) => {
+    const result = await fetchBotInventories(options);
+    renderCliByBots(result.inventories);
+    printInventoryWarnings(result);
+  });
+
+view
+  .command("tui")
+  .option("--name <name>", "Bot name")
+  .option("--all", "Fetch inventories for all managed bots")
+  .option("--app-id <appId>", "App ID", "730")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .option("--allow-public-fallback", "If session is invalid, try public inventory query")
+  .action(async (options: BotInventoryViewOptions) => {
+    const result = await fetchBotInventories(options);
+    printInventoryWarnings(result);
+    runTuiByBots(result.inventories);
+  });
+
+view
+  .command("web")
+  .option("--port <port>", "Web server port", "3000")
+  .action(async (options: { port: string }) => {
+    await runWebServer(steamProvider, Number(options.port));
   });
 
 program

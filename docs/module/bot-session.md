@@ -13,7 +13,9 @@
 - `src/core/port/steam-auth-gateway.ts`
   - Steam 인증 포트 (credential + guard-code)
 - `src/core/usecase/bot-session-service.ts`
-  - bot register/add/auth/session-check 유스케이스
+  - bot create/connect/reauth + 세션 조회 유스케이스
+- `src/core/usecase/bot-inventory-query-service.ts`
+  - view cli/tui 대상 봇 해석(`--name`, `--all`)과 세션 기반 조회 정책
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma 저장소 구현
 - `src/adapter/steam/steam-auth-gateway.ts`
@@ -36,7 +38,12 @@
 
 ## Authentication Flow
 
-### `bot add`
+### `bot create`
+
+- 봇 메타(`name`, `steamId`, `accountName`)만 먼저 등록
+- 인증/세션 갱신은 수행하지 않음
+
+### `bot connect`
 
 1. 사용자에게 Steam password 입력 받음
 2. Steam Guard 필요 시 OTP(또는 확인 대기) 입력 받음
@@ -46,13 +53,13 @@
 
 핵심: 인증이 실패하면 세션이 생성되지 않으며, Bot/세션 불일치 상태를 줄이기 위해 인증 성공 이후에 세션 저장을 수행합니다.
 
-### `bot auth`
+### `bot reauth`
 
 1. 기존 Bot을 `name`으로 조회
 2. 저장된 `accountName`으로 Steam 재인증
 3. 성공 시 BotSession 갱신
 
-### `bot session-check`
+### `ls sessions`
 
 - 단일 봇 또는 전체 봇의 세션 유효성을 조회
 - 출력: `hasSession`, `isValid`, `expiresAt`, `lastCheckedAt`
@@ -62,13 +69,13 @@
 ### 봇 메타만 선등록
 
 ```bash
-npm run dev -- bot register --name <bot-name> --steam-id <steam-id64> --account-name <steam-login-id>
+npm run dev -- bot create --name <bot-name> --steam-id <steam-id64> --account-name <steam-login-id>
 ```
 
 ### 신규 봇 등록 + 즉시 인증
 
 ```bash
-npm run dev -- bot add --name <bot-name> --steam-id <steam-id64> --account-name <steam-login-id>
+npm run dev -- bot connect --name <bot-name> --steam-id <steam-id64> --account-name <steam-login-id>
 ```
 
 실행 중 입력:
@@ -78,20 +85,31 @@ npm run dev -- bot add --name <bot-name> --steam-id <steam-id64> --account-name 
 ### 기존 봇 재인증
 
 ```bash
-npm run dev -- bot auth --name <bot-name>
+npm run dev -- bot reauth --name <bot-name>
 ```
 
 ### 세션 상태 확인 (단일)
 
 ```bash
-npm run dev -- bot session-check --name <bot-name>
+npm run dev -- ls sessions --name <bot-name>
 ```
 
 ### 세션 상태 확인 (전체)
 
 ```bash
-npm run dev -- bot session-check
+npm run dev -- ls sessions
 ```
+
+### 봇 인벤토리 조회 (CLI/TUI)
+
+```bash
+npm run dev -- view cli --name <bot-name> --app-id 440 --context-id 2
+npm run dev -- view cli --all --app-id 440 --context-id 2
+npm run dev -- view tui --name <bot-name> --app-id 440 --context-id 2
+```
+
+옵션:
+- `--allow-public-fallback`: 세션이 없거나 만료된 경우 공개 인벤토리 조회를 시도
 
 ## Troubleshooting
 

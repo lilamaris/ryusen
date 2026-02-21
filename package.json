@@ -6,9 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "ts-node src/index.ts",
-    "dev:web": "ts-node src/index.ts bot web --port 3000",
-    "dev:cli": "ts-node src/index.ts bot cli",
-    "dev:tui": "ts-node src/index.ts bot tui",
+    "dev:web": "ts-node src/index.ts view web --port 3000",
+    "dev:cli": "ts-node src/index.ts view cli",
+    "dev:tui": "ts-node src/index.ts view tui",
     "test": "npm run build && node --test dist/**/*.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
