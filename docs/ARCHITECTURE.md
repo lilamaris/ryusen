@@ -65,6 +65,13 @@
 
 ## Session Management Flow
 
+- `bot cli`
+  - Renders one inventory query in console table format.
+- `bot tui`
+  - Renders one inventory query in terminal UI format.
+- `bot web`
+  - Starts web UI server for interactive inventory query.
+
 - `bot add`
   - Authenticates via Steam credentials first, then creates/updates bot session state.
   - If Steam Guard is required, OTP or confirmation prompt is requested interactively.

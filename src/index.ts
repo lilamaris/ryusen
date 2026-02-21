@@ -123,7 +123,9 @@ program
   .description("Steam inventory viewer")
   .showHelpAfterError();
 
-program
+const bot = program.command("bot").description("Manage bot accounts and sessions");
+
+bot
   .command("cli")
   .requiredOption("--steam-id <steamId>", "SteamID64")
   .option("--app-id <appId>", "App ID", "730")
@@ -132,7 +134,7 @@ program
     await runCli(steamProvider, getQueryOptions(options));
   });
 
-program
+bot
   .command("tui")
   .requiredOption("--steam-id <steamId>", "SteamID64")
   .option("--app-id <appId>", "App ID", "730")
@@ -141,14 +143,12 @@ program
     await runTui(steamProvider, getQueryOptions(options));
   });
 
-program
+bot
   .command("web")
   .option("--port <port>", "Web server port", "3000")
   .action(async (options: { port: string }) => {
     await runWebServer(steamProvider, Number(options.port));
   });
-
-const bot = program.command("bot").description("Manage bot accounts and sessions");
 
 bot
   .command("register")
