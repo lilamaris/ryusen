@@ -1,5 +1,5 @@
-import type { InventoryProvider } from "./inventory";
-import type { SteamInventoryQuery } from "./steam";
+import type { InventoryProvider } from "../core/provider/inventory-provider";
+import type { SteamInventoryQuery } from "../adapter/stream/steam-inventory-provider";
 
 export async function runCli(
   provider: InventoryProvider<SteamInventoryQuery>,

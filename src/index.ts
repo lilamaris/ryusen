@@ -1,8 +1,11 @@
 import { Command } from "commander";
-import { runCli } from "./cli";
-import { SteamInventoryProvider, type SteamInventoryQuery } from "./steam";
-import { runTui } from "./tui";
-import { runWebServer } from "./web";
+import {
+  SteamInventoryProvider,
+  type SteamInventoryQuery,
+} from "./adapter/stream/steam-inventory-provider";
+import { runCli } from "./presentation/cli";
+import { runTui } from "./presentation/tui";
+import { runWebServer } from "./presentation/web";
 
 type QueryOptions = {
   steamId: string;

@@ -1,4 +1,4 @@
-import type { InventoryItem, InventoryProvider } from "./inventory";
+import type { InventoryItem, InventoryProvider } from "../../core/provider/inventory-provider";
 
 export type SteamInventoryQuery = {
   steamId: string;
