@@ -1,153 +1,47 @@
-# Architecture.md
+# ARCHITECTURE.md
 
-## Goal
+## Purpose
 
-- Separate core inventory contracts from infrastructure implementation and presentation entrypoints.
-- Persist bot/session state so runtime flows can reuse valid sessions instead of relying on stateless calls.
-- Support interactive Steam re-authentication with OTP prompts for new bot onboarding and session refresh.
+This document is a routing map, not a full implementation spec.
+Use it to identify the feature/module you are changing, then read only the relevant `docs/module/*.md`.
 
-## Directory Layout
+Detailed behavior, flow, and CLI usage live in module docs.
 
-- `src/core/provider/inventory-provider.ts`
-  - Defines core inventory contract types.
-  - `InventoryItem`, `InventoryQuery`, and `InventoryProvider<TQuery>` live here.
-- `src/core/bot/bot-session.ts`
-  - Bot and bot-session domain types.
-- `src/core/port/bot-session-repository.ts`
-  - Persistence port for bot/session lifecycle.
-- `src/core/port/bot-inventory-repository.ts`
-  - Persistence port for bot-to-item holdings snapshot and item-holder lookups.
-- `src/core/port/trade-consolidation-repository.ts`
-  - Persistence port for control-bot consolidation jobs/legs.
-- `src/core/port/steam-auth-gateway.ts`
-  - Auth gateway port for Steam credential + guard-code login.
-- `src/core/usecase/bot-session-service.ts`
-  - Use case for bot create/connect/reauth and session status checks.
-- `src/core/usecase/bot-inventory-refresh-service.ts`
-  - Use case for periodic bot inventory refresh and persistence.
-- `src/core/usecase/bot-inventory-query-service.ts`
-  - Resolves inventory query targets from managed bots (`--name`/`--all`) with session/fallback policy.
-- `src/core/usecase/bot-inventory-view-service.ts`
-  - Orchestrates `view cli/tui` inventory fetch across resolved targets and aggregates skipped/failed bots.
-- `src/core/usecase/cluster-stock-service.ts`
-  - Aggregates cluster stock totals + holder rows for one `sku`.
-- `src/core/usecase/control-bot-consolidation-service.ts`
-  - Builds all-or-nothing consolidation plans into control bot and persists as trade jobs.
-- `src/core/usecase/trade-consolidation-settlement-service.ts`
-  - Applies manual leg completion/failure and transitions job status (`PLANNED` -> `COMPLETED`/`FAILED`).
-- `src/adapter/steam/steam-authenticated-inventory-provider.ts`
-  - Single Steam inventory adapter for both public and authenticated requests.
-  - Uses `InventoryProvider` contract and optional web cookies from query.
-- `src/adapter/steam/tf2-sku.ts`
-  - Converts Steam item metadata into TF2-style SKU (`def_index` + attribute tokens).
-- `src/adapter/steam/steam-auth-gateway.ts`
-  - `SteamSessionAuthGateway` implementation using `steam-session`.
-- `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
-  - Prisma implementation of bot/session repository port.
-- `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
-  - Prisma implementation of bot inventory repository port.
-- `src/adapter/persistence/prisma/prisma-trade-consolidation-repository.ts`
-  - Prisma implementation of trade consolidation job repository port.
-- `src/presentation/`
-  - `command/`
-    - `bot.ts`: `bot create/connect/reauth/refresh/watch` command wiring.
-    - `ls.ts`: `ls bots/sessions/items/stock` command wiring.
-    - `trade.ts`: `trade consolidate/jobs/leg-complete/leg-fail` command wiring.
-    - `view.ts`: `view cli/tui/web` command wiring.
-  - `cli.ts`: CLI table renderer.
-  - `tui.ts`: terminal UI renderer.
-  - `web/`
-    - `server.ts`: web server startup entrypoint.
-    - `routes.ts`: express route handlers.
-    - `query.ts`: query parsing helpers.
-    - `template.ts`: HTML template renderer.
-- `src/index.ts`
-  - CLI entrypoint. Registers top-level command groups and handles process lifecycle.
-  - Hosts interactive CLI prompt flow for password/OTP input.
-- `src/app/bootstrap.ts`
-  - Application bootstrap. Wires adapters/repositories/use cases and returns app context.
+## Feature Routing
 
-## Dependency Direction
+- Bot identity/session/authentication
+  - Module doc: `docs/module/bot-session.md`
+  - Main commands: `bot create`, `bot connect`, `bot reauth`, `ls sessions`, `ls bots`
+- Inventory refresh and holdings persistence
+  - Module doc: `docs/module/inventory-refresh.md`
+  - Main commands: `bot refresh`, `bot watch`, `ls items`, `ls stock`
+- Inventory query/view rendering (CLI/TUI/Web)
+  - Module doc: `docs/module/inventory-view.md`
+  - Main commands: `view cli`, `view tui`, `view web`
+- Control-bot consolidation planning and manual settlement
+  - Module doc: `docs/module/trade-consolidation.md`
+  - Main commands: `trade consolidate`, `trade jobs`, `trade leg-complete`, `trade leg-fail`
 
-- `core` has no dependency on adapters or presentation.
-- `adapter` depends on `core` contracts.
-- `presentation` depends on `core` contracts and query type for command input.
-- `app/bootstrap.ts` assembles concrete adapter + repository + use case.
-- `index.ts` depends on bootstrap + presentation command registration.
+If your task spans multiple features, read all relevant module docs.
 
-## Persistence Model
+## System Boundaries
 
-- `Bot`
-  - Unique bot identity (`name`, `steamId`, `accountName`).
-- `BotSession`
-  - One current session per bot (`botId` unique).
-  - Stores `sessionToken`, `webCookies`, `expiresAt`, `lastCheckedAt`.
-- `Item`
-  - Normalized item catalog per app/context and `sku`.
-  - `sku` is generated from TF2 `def_index` + selected attributes (killstreak, quality, unusual effect, wear, etc.).
-- `BotHasItem`
-  - Per-bot inventory snapshot (`botId`, `itemId`, `amount`, `lastSeenAt`, `rawPayload`).
-- `TradeConsolidationJob`
-  - Consolidation request into one control bot (`controlBotId`, `sku`, `requestedAmount`, `status`).
-- `TradeConsolidationLeg`
-  - Planned transfer legs from donor bots into control bot (`fromBotId`, `toBotId`, `amount`, `status`).
+- `core`: domain types, ports, use cases
+- `adapter`: infrastructure implementations (Prisma, Steam)
+- `presentation`: CLI/TUI/Web command and rendering
+- `app/bootstrap.ts`: dependency wiring
+- `index.ts`: entrypoint and process lifecycle
 
-## Session Management Flow
+Dependency direction:
+- `core` has no dependency on `adapter`/`presentation`
+- `adapter` depends on `core` contracts
+- `presentation` depends on `core` usecases/contracts
 
-- Global option: `--debug`
-  - Enables debug logs for command orchestration and `src/**` flow traces.
-  - Covers core usecases, Prisma repositories, Steam adapters, and presentation entrypoints.
+## Doc Update Policy
 
-- `view cli`
-  - Renders one inventory query in console table format.
-  - Resolves target bots by `--name` or `--all`, fetches inventories, then renders merged results.
-  - Skipped/failed bots are reported with reasons.
-- `view tui`
-  - Renders one inventory query in terminal UI format.
-  - Resolves target bots by `--name` or `--all`, fetches inventories, and renders merged results.
-  - Supports optional public fallback when session is missing/expired.
-- `view web`
-  - Starts web UI server for interactive inventory query.
-  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
+Update this file only when routing/boundaries change, such as:
+- a new feature/module is introduced
+- ownership of a command/flow moves to another module
+- dependency boundaries or layer responsibilities change
 
-- `bot create`
-  - Registers managed bot identity (`name`, `steamId`, `accountName`) without authentication.
-- `bot connect`
-  - Authenticates via Steam credentials first, then creates/updates bot session state.
-  - If Steam Guard is required, OTP or confirmation prompt is requested interactively.
-- `bot reauth`
-  - Re-authenticates existing bot using stored `accountName` and prompted password/OTP.
-  - Refreshes persisted session data.
-- `ls sessions`
-  - Returns current validity of one bot or all bots using persisted session expiry metadata.
-  - Batch check path uses one repository read for bots+sessions, then updates `lastCheckedAt` per existing session.
-- `ls bots`
-  - Lists managed bot identities.
-- `bot refresh`
-  - Refreshes all managed bot inventories once (default `appId=440`, `contextId=2`) using authenticated cookies.
-- `bot watch`
-  - Runs periodic refresh (`--interval-seconds`, default 120).
-- `ls items`
-  - Lists which bots currently hold a given `sku`.
-- `ls stock`
-  - Shows cluster total amount and holder rows for one `sku`.
-- `trade consolidate`
-  - Creates an all-or-nothing consolidation plan into `--control-name`.
-  - Persists one `PLANNED` job and donor legs (`fromBot -> controlBot`) for manual Steam execution.
-- `trade jobs`
-  - Lists saved consolidation jobs and current statuses.
-- `trade leg-complete`
-  - Marks one planned leg as completed.
-  - If it was the last planned leg, marks the job as `COMPLETED`.
-- `trade leg-fail`
-  - Marks one planned leg as failed and marks the job as `FAILED` with reason.
-
-## Update Policy
-
-If code changes meaningfully (boundaries, contracts, flows, domain semantics), update this document in the same change set.
-(See `docs/RULE.md` for the detailed checklist.)
-
-## Notes
-
-- Current Steam adapter path is `adapter/steam`.
-- If more providers are added later, place each provider implementation under `src/adapter/<provider>/`.
+For behavior/flow/CLI detail changes, update the relevant `docs/module/*.md` instead.

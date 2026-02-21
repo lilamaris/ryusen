@@ -101,6 +101,9 @@ If in doubt: update the doc.
 
 When adding a new module/subsystem (new directory, bounded-context file set, or major adapter/usecase group), add a usage document in `docs/module/<module-name>.md` in the same change set.
 
+`docs/module/TEMPLATE.md` is mandatory as the baseline structure for new module docs.
+Start from the template, then fill each section with module-specific content.
+
 The module document should include at least:
 
 - What problem the module solves
@@ -111,6 +114,14 @@ The module document should include at least:
 - Troubleshooting notes for common failures
 
 If a module changes significantly later, update its module doc in the same commit/PR.
+
+### Module doc routing expectation
+
+- `docs/ARCHITECTURE.md` should stay concise and routing-oriented.
+- Detailed flow/CLI/data behavior belongs in `docs/module/*.md`.
+- If command ownership or feature boundaries change, update both:
+  - `docs/ARCHITECTURE.md` (routing)
+  - relevant `docs/module/*.md` (details)
 
 ## 7. Require tests for behavioral changes
 

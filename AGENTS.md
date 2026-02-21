@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Entrypoint for how an agent should operate in this repo.
-Primary job: document routing. Decide what you are doing, then read the right docs first.
+Primary job: document routing. Decide what you are doing, then read only the right docs first.
 
 ## 0) Classify the request
 
@@ -19,16 +19,19 @@ Read in this order:
 
 1. `docs/ARCHITECTURE.md`
 2. `docs/RULE.md`
+3. Relevant `docs/module/*.md` selected via `docs/ARCHITECTURE.md` routing
 
 Then implement.
 
 If your change is “meaningful” (semantics, boundaries, contracts, flows), update `docs/ARCHITECTURE.md` in the same change set (see `docs/RULE.md`).
+If a module is added/changed, update its `docs/module/*.md` using `docs/module/TEMPLATE.md`.
 
 ### B. Design discussion (no code changes)
 
 Read:
 
 1. `docs/ARCHITECTURE.md`
+2. Relevant `docs/module/*.md` selected via `docs/ARCHITECTURE.md` routing
 
 If the discussion touches repo conventions/policies, also read `docs/RULE.md`.
 
@@ -38,6 +41,7 @@ Read:
 
 1. `docs/ARCHITECTURE.md`
 2. `docs/RULE.md`
+3. Relevant `docs/module/*.md` selected via `docs/ARCHITECTURE.md` routing
 
 Then: reproduce → root cause → minimal fix → verification plan.
 
@@ -62,4 +66,5 @@ Bug: repro + root cause + minimal fix + verification
 ## 4) Canonical docs
 
 Detailed implementation rules: `docs/RULE.md`  
-Project structure & boundaries: `docs/ARCHITECTURE.md`
+Feature routing & boundaries: `docs/ARCHITECTURE.md`  
+Feature details and usage: `docs/module/*.md`
