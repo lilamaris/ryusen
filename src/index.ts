@@ -6,6 +6,7 @@ import { debugLog, setDebugEnabled } from "./debug";
 import type { DebugLogger } from "./core/usecase/debug-logger";
 import { registerBotCommands } from "./presentation/command/bot";
 import { registerLsCommands } from "./presentation/command/ls";
+import { registerTradeCommands } from "./presentation/command/trade";
 import { registerViewCommands } from "./presentation/command/view";
 
 type BotRefreshOptions = {
@@ -67,9 +68,13 @@ const {
   steamProvider,
   botSessionRepository,
   botInventoryRepository,
+  tradeConsolidationRepository,
   botSessionService,
   botInventoryRefreshService,
   botInventoryViewService,
+  clusterStockService,
+  controlBotConsolidationService,
+  tradeConsolidationSettlementService,
 } = createAppContext(debugLogger);
 
 program
@@ -88,6 +93,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
 
 const bot = program.command("bot").description("Mutating bot operations");
 const ls = program.command("ls").description("List resources");
+const trade = program.command("trade").description("Control-bot consolidation planning");
 const view = program.command("view").description("Interactive and formatted inventory views");
 
 registerBotCommands(bot, {
@@ -102,6 +108,14 @@ registerLsCommands(ls, {
   botSessionRepository,
   botSessionService,
   botInventoryRepository,
+  clusterStockService,
+});
+
+registerTradeCommands(trade, {
+  botSessionRepository,
+  tradeConsolidationRepository,
+  controlBotConsolidationService,
+  tradeConsolidationSettlementService,
 });
 
 registerViewCommands(view, {

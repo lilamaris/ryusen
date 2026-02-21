@@ -4,6 +4,7 @@ import type {
   BotInventoryRepository,
   BotInventoryWriteItem,
   BotItemHolder,
+  BotSkuHolding,
 } from "../../../core/port/bot-inventory-repository";
 
 export class PrismaBotInventoryRepository implements BotInventoryRepository {
@@ -138,6 +139,49 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
     debugLog("PrismaBotInventoryRepository", "listBotsBySku:done", { count: rows.length });
 
     return rows.map((row) => ({
+      botName: row.bot.name,
+      steamId: row.bot.steamId,
+      amount: row.amount,
+      lastSeenAt: row.lastSeenAt,
+    }));
+  }
+
+  async listBotSkuHoldings(input: {
+    appId: number;
+    contextId: string;
+    sku: string;
+  }): Promise<BotSkuHolding[]> {
+    debugLog("PrismaBotInventoryRepository", "listBotSkuHoldings:start", input);
+    const rows = await this.prisma.botHasItem.findMany({
+      where: {
+        item: {
+          appId: input.appId,
+          contextId: input.contextId,
+          sku: input.sku,
+        },
+      },
+      orderBy: {
+        bot: {
+          name: "asc",
+        },
+      },
+      select: {
+        amount: true,
+        lastSeenAt: true,
+        bot: {
+          select: {
+            id: true,
+            name: true,
+            steamId: true,
+          },
+        },
+      },
+    });
+
+    debugLog("PrismaBotInventoryRepository", "listBotSkuHoldings:done", { count: rows.length });
+
+    return rows.map((row) => ({
+      botId: row.bot.id,
       botName: row.bot.name,
       steamId: row.bot.steamId,
       amount: row.amount,

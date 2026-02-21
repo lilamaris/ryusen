@@ -47,6 +47,9 @@ model Bot {
   accountName String     @unique
   session     BotSession?
   items       BotHasItem[]
+  outgoingTradeLegs TradeConsolidationLeg[] @relation("TradeLegFromBot")
+  incomingTradeLegs TradeConsolidationLeg[] @relation("TradeLegToBot")
+  controlJobs       TradeConsolidationJob[] @relation("ControlBotJobs")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -63,4 +66,54 @@ model BotSession {
   bot           Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+}
+
+enum TradeConsolidationJobStatus {
+  PLANNED
+  COMPLETED
+  FAILED
+}
+
+enum TradeConsolidationLegStatus {
+  PLANNED
+  COMPLETED
+  FAILED
+}
+
+model TradeConsolidationJob {
+  id              String                      @id @default(cuid())
+  controlBotId    String
+  appId           Int
+  contextId       String
+  sku             String
+  requestedAmount Int
+  status          TradeConsolidationJobStatus
+  failureReason   String?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  controlBot      Bot                         @relation("ControlBotJobs", fields: [controlBotId], references: [id], onDelete: Cascade)
+  legs            TradeConsolidationLeg[]
+
+  @@index([status])
+  @@index([sku])
+  @@index([controlBotId])
+}
+
+model TradeConsolidationLeg {
+  id        String                      @id @default(cuid())
+  jobId     String
+  fromBotId String
+  toBotId   String
+  sku       String
+  amount    Int
+  status    TradeConsolidationLegStatus
+  createdAt DateTime                    @default(now())
+  updatedAt DateTime                    @updatedAt
+  job       TradeConsolidationJob       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fromBot   Bot                         @relation("TradeLegFromBot", fields: [fromBotId], references: [id], onDelete: Cascade)
+  toBot     Bot                         @relation("TradeLegToBot", fields: [toBotId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([fromBotId])
+  @@index([toBotId])
 }

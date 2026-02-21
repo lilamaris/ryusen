@@ -82,6 +82,10 @@ class FakeBotInventoryRepository implements BotInventoryRepository {
   listBotsBySku(): Promise<Array<{ botName: string; steamId: string; amount: number; lastSeenAt: Date }>> {
     return Promise.resolve([]);
   }
+
+  listBotSkuHoldings(): Promise<Array<{ botId: string; botName: string; steamId: string; amount: number; lastSeenAt: Date }>> {
+    return Promise.resolve([]);
+  }
 }
 
 void test("refreshAll updates only valid sessions and records failures", async () => {

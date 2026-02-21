@@ -23,7 +23,7 @@
 - `src/presentation/command/bot.ts`
   - `bot refresh`, `bot watch` wiring
 - `src/presentation/command/ls.ts`
-  - `ls items` wiring
+  - `ls items`, `ls stock` wiring
 - `src/app/bootstrap.ts`
   - inventory provider/repository/usecase 조립
 

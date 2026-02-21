@@ -17,6 +17,8 @@
   - Persistence port for bot/session lifecycle.
 - `src/core/port/bot-inventory-repository.ts`
   - Persistence port for bot-to-item holdings snapshot and item-holder lookups.
+- `src/core/port/trade-consolidation-repository.ts`
+  - Persistence port for control-bot consolidation jobs/legs.
 - `src/core/port/steam-auth-gateway.ts`
   - Auth gateway port for Steam credential + guard-code login.
 - `src/core/usecase/bot-session-service.ts`
@@ -27,6 +29,12 @@
   - Resolves inventory query targets from managed bots (`--name`/`--all`) with session/fallback policy.
 - `src/core/usecase/bot-inventory-view-service.ts`
   - Orchestrates `view cli/tui` inventory fetch across resolved targets and aggregates skipped/failed bots.
+- `src/core/usecase/cluster-stock-service.ts`
+  - Aggregates cluster stock totals + holder rows for one `sku`.
+- `src/core/usecase/control-bot-consolidation-service.ts`
+  - Builds all-or-nothing consolidation plans into control bot and persists as trade jobs.
+- `src/core/usecase/trade-consolidation-settlement-service.ts`
+  - Applies manual leg completion/failure and transitions job status (`PLANNED` -> `COMPLETED`/`FAILED`).
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Single Steam inventory adapter for both public and authenticated requests.
   - Uses `InventoryProvider` contract and optional web cookies from query.
@@ -38,10 +46,13 @@
   - Prisma implementation of bot/session repository port.
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma implementation of bot inventory repository port.
+- `src/adapter/persistence/prisma/prisma-trade-consolidation-repository.ts`
+  - Prisma implementation of trade consolidation job repository port.
 - `src/presentation/`
   - `command/`
     - `bot.ts`: `bot create/connect/reauth/refresh/watch` command wiring.
-    - `ls.ts`: `ls bots/sessions/items` command wiring.
+    - `ls.ts`: `ls bots/sessions/items/stock` command wiring.
+    - `trade.ts`: `trade consolidate/jobs/leg-complete/leg-fail` command wiring.
     - `view.ts`: `view cli/tui/web` command wiring.
   - `cli.ts`: CLI table renderer.
   - `tui.ts`: terminal UI renderer.
@@ -76,6 +87,10 @@
   - `sku` is generated from TF2 `def_index` + selected attributes (killstreak, quality, unusual effect, wear, etc.).
 - `BotHasItem`
   - Per-bot inventory snapshot (`botId`, `itemId`, `amount`, `lastSeenAt`, `rawPayload`).
+- `TradeConsolidationJob`
+  - Consolidation request into one control bot (`controlBotId`, `sku`, `requestedAmount`, `status`).
+- `TradeConsolidationLeg`
+  - Planned transfer legs from donor bots into control bot (`fromBotId`, `toBotId`, `amount`, `status`).
 
 ## Session Management Flow
 
@@ -114,6 +129,18 @@
   - Runs periodic refresh (`--interval-seconds`, default 120).
 - `ls items`
   - Lists which bots currently hold a given `sku`.
+- `ls stock`
+  - Shows cluster total amount and holder rows for one `sku`.
+- `trade consolidate`
+  - Creates an all-or-nothing consolidation plan into `--control-name`.
+  - Persists one `PLANNED` job and donor legs (`fromBot -> controlBot`) for manual Steam execution.
+- `trade jobs`
+  - Lists saved consolidation jobs and current statuses.
+- `trade leg-complete`
+  - Marks one planned leg as completed.
+  - If it was the last planned leg, marks the job as `COMPLETED`.
+- `trade leg-fail`
+  - Marks one planned leg as failed and marks the job as `FAILED` with reason.
 
 ## Update Policy
 
