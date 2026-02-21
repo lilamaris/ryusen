@@ -60,6 +60,6 @@ export function getBotTradeReadiness(
 
   return {
     onboardingState,
-    tradable: onboardingState === "AUTO_READY",
+    tradable: onboardingState !== "ONBOARDING_LOCKED" && onboardingState !== "AUTH_PENDING_CODE",
   };
 }

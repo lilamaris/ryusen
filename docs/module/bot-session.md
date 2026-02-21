@@ -193,6 +193,7 @@ npm run dev -- ls sessions --name <bot-name>
 - Session validity:
   - Expired/missing session is not auto-renewed; operator runs `bot reauth`.
 - Trade automation readiness:
+  - `onboardingState=MANUAL_ONLY` → tradable `true` (manual confirmation required)
   - `onboardingState=AUTO_READY` → tradable `true`
   - `onboardingState=ONBOARDING_LOCKED` and `tradeLockedUntil` not reached → tradable `false`
   - `onboardingState=ONBOARDING_LOCKED` and lock expired → auto-transition to `AUTO_READY`

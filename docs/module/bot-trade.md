@@ -85,7 +85,7 @@ npm run dev -- bot set-trade-token --name <bot-name> --token <trade-token>
 
 - Validation fails when:
   - Either bot name is unknown.
-  - Source bot is not tradable yet (`onboardingState` is locked/manual).
+  - Source bot is not tradable yet (`onboardingState` is `ONBOARDING_LOCKED` or `AUTH_PENDING_CODE`).
   - No active session exists for the source bot or the session has expired.
   - Requested amount exceeds available quantity in the specified inventory.
 - External failures (Steam network errors, missing cookies, rejected trade offer) are surfaced from `SteamTradeOfferGateway`.
