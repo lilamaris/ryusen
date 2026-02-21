@@ -1,4 +1,4 @@
-# AGENTS.md
+# RULE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
@@ -57,13 +57,45 @@ Transform tasks into verifiable goals:
 
 For multi-step tasks, state a brief plan:
 
-```
 1. [Step] → verify: [check]
 2. [Step] → verify: [check]
 3. [Step] → verify: [check]
-```
+   Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+## 5. Keep docs/ARCHITECTURE.md in sync with meaningful changes
+
+If your change alters system meaning (not just mechanics), you MUST update `docs/ARCHITECTURE.md` in the same PR/commit.
+
+### Meaningful change examples (ARCHITECTURE update required)
+
+- Module/package boundary changes or responsibility moves
+- New/removed major component
+- Contract changes: public APIs, message/event payloads, config schema, CLI interfaces
+- Domain semantics changes: invariants, lifecycle/state transitions, renamed core concepts
+- Data model changes with semantic impact (schemas/relations)
+- Flow changes: orchestration steps, saga order, async messaging patterns
+- Cross-cutting semantic changes: auth/permission rules, idempotency/retry semantics, caching semantics
+- Operational meaning changes: deployment topology, ports, storage strategy, ingress/egress expectations
+
+### Usually not meaningful (ARCHITECTURE update not required)
+
+- Behavior-preserving refactors (extract function, renames local symbols, file moves without responsibility change)
+- Formatting/linting/comment-only changes
+- Test-only changes that don’t introduce new behavior
+
+If in doubt: update the doc.
+
+### Minimal doc edit rule
+
+- Update only impacted sections; don’t rewrite the whole document.
+- Keep vocabulary consistent with existing terms.
+- Prefer small “Before → After” notes when the change is nuanced.
+
+### Implementation checklist
+
+- In PR/commit notes: `Architecture impact: YES/NO`
+- If YES: update `docs/ARCHITECTURE.md` in the same change set.
+- Verification: does ARCHITECTURE still describe module boundaries + flows + contracts accurately?
 
 ---
 
