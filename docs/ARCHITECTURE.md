@@ -25,6 +25,8 @@
   - Use case for periodic bot inventory refresh and persistence.
 - `src/core/usecase/bot-inventory-query-service.ts`
   - Resolves inventory query targets from managed bots (`--name`/`--all`) with session/fallback policy.
+- `src/core/usecase/bot-inventory-view-service.ts`
+  - Orchestrates `view cli/tui` inventory fetch across resolved targets and aggregates skipped/failed bots.
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Single Steam inventory adapter for both public and authenticated requests.
   - Uses `InventoryProvider` contract and optional web cookies from query.
@@ -37,19 +39,30 @@
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma implementation of bot inventory repository port.
 - `src/presentation/`
+  - `command/`
+    - `bot.ts`: `bot create/connect/reauth/refresh/watch` command wiring.
+    - `ls.ts`: `ls bots/sessions/items` command wiring.
+    - `view.ts`: `view cli/tui/web` command wiring.
   - `cli.ts`: CLI table renderer.
   - `tui.ts`: terminal UI renderer.
-  - `web.ts`: web UI renderer.
+  - `web/`
+    - `server.ts`: web server startup entrypoint.
+    - `routes.ts`: express route handlers.
+    - `query.ts`: query parsing helpers.
+    - `template.ts`: HTML template renderer.
 - `src/index.ts`
-  - Composition root. Wires adapters to use cases and presentation commands.
+  - CLI entrypoint. Registers top-level command groups and handles process lifecycle.
   - Hosts interactive CLI prompt flow for password/OTP input.
+- `src/app/bootstrap.ts`
+  - Application bootstrap. Wires adapters/repositories/use cases and returns app context.
 
 ## Dependency Direction
 
 - `core` has no dependency on adapters or presentation.
 - `adapter` depends on `core` contracts.
 - `presentation` depends on `core` contracts and query type for command input.
-- `index.ts` assembles concrete adapter + presentation.
+- `app/bootstrap.ts` assembles concrete adapter + repository + use case.
+- `index.ts` depends on bootstrap + presentation command registration.
 
 ## Persistence Model
 
@@ -72,11 +85,11 @@
 
 - `view cli`
   - Renders one inventory query in console table format.
-  - Resolves target bots by `--name` or `--all` and then renders merged results.
+  - Resolves target bots by `--name` or `--all`, fetches inventories, then renders merged results.
   - Skipped/failed bots are reported with reasons.
 - `view tui`
   - Renders one inventory query in terminal UI format.
-  - Resolves target bots by `--name` or `--all` and renders merged results.
+  - Resolves target bots by `--name` or `--all`, fetches inventories, and renders merged results.
   - Supports optional public fallback when session is missing/expired.
 - `view web`
   - Starts web UI server for interactive inventory query.

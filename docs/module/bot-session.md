@@ -16,12 +16,18 @@
   - bot create/connect/reauth + 세션 조회 유스케이스
 - `src/core/usecase/bot-inventory-query-service.ts`
   - view cli/tui 대상 봇 해석(`--name`, `--all`)과 세션 기반 조회 정책
+- `src/core/usecase/bot-inventory-view-service.ts`
+  - 해석된 대상에 대한 실제 인벤토리 조회 오케스트레이션(스킵/실패 집계)
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma 저장소 구현
 - `src/adapter/steam/steam-auth-gateway.ts`
   - `steam-session` 기반 Steam 인증 구현
 - `src/index.ts`
-  - CLI 엔트리, password/OTP interactive prompt
+  - CLI 엔트리, top-level command group 등록, password/OTP interactive prompt
+- `src/presentation/command/bot.ts`
+  - `bot create/connect/reauth` 및 refresh/watch 명령 wiring
+- `src/app/bootstrap.ts`
+  - Prisma repository/adapter/usecase 조립
 
 ## Data Model
 

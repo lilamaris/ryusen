@@ -19,7 +19,13 @@
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma 기반 `Item`, `BotHasItem` 갱신 구현
 - `src/index.ts`
-  - CLI 명령(`bot refresh`, `bot watch`, `ls items`) 연결
+  - CLI 엔트리 및 top-level command group 등록
+- `src/presentation/command/bot.ts`
+  - `bot refresh`, `bot watch` wiring
+- `src/presentation/command/ls.ts`
+  - `ls items` wiring
+- `src/app/bootstrap.ts`
+  - inventory provider/repository/usecase 조립
 
 ## Data Model
 
@@ -43,7 +49,7 @@
 5. 결과 집계(`updated/skipped/failed`) 출력
 
 참고: `view cli/tui` 경로는 `BotInventoryQueryService`에서 `--name/--all` 대상을 해석하고,
-세션 정책(필수 또는 공개 fallback)을 적용한 뒤 동일 adapter를 사용합니다.
+`BotInventoryViewService`에서 대상을 순회 조회해 스킵/실패를 집계한 뒤 동일 adapter를 사용합니다.
 
 ## CLI Usage
 
