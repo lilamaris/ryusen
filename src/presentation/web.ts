@@ -1,5 +1,6 @@
 import express from "express";
 import type { InventoryProvider, InventoryQuery } from "../core/provider/inventory-provider";
+import { debugLog } from "../debug";
 
 function pageTemplate(content: string): string {
   return `<!doctype html>
@@ -52,6 +53,7 @@ export async function runWebServer(
   provider: InventoryProvider<InventoryQuery>,
   port: number
 ): Promise<void> {
+  debugLog("presentation/web", "runWebServer:start", { port });
   const app = express();
 
   app.get("/", (_req, res) => {
@@ -59,11 +61,18 @@ export async function runWebServer(
   });
 
   app.get("/inventory", async (req, res) => {
+    debugLog("presentation/web", "inventory:request", {
+      steamId: req.query.steamId,
+      appId: req.query.appId,
+      contextId: req.query.contextId,
+    });
+
     const steamId = getSingleQueryValue(req.query.steamId, "").trim();
     const appId = getSingleQueryValue(req.query.appId, "730").trim();
     const contextId = getSingleQueryValue(req.query.contextId, "2").trim();
 
     if (!steamId) {
+      debugLog("presentation/web", "inventory:badRequest", { reason: "missing steamId" });
       res.status(400).send(pageTemplate("<p>steamId is required.</p>"));
       return;
     }
@@ -71,6 +80,7 @@ export async function runWebServer(
     try {
       const query = parseQuery(steamId, appId, contextId);
       const items = await provider.listItems(query);
+      debugLog("presentation/web", "inventory:fetched", { itemCount: items.length });
       const rows = items
         .map(
           (item) =>
@@ -84,12 +94,14 @@ export async function runWebServer(
       );
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      debugLog("presentation/web", "inventory:failed", { message });
       res.status(500).send(pageTemplate(`<p>Failed to load inventory: ${message}</p>`));
     }
   });
 
   await new Promise<void>((resolve) => {
     app.listen(port, () => {
+      debugLog("presentation/web", "runWebServer:listening", { port });
       console.log(`Web UI running on http://localhost:${port}`);
       resolve();
     });

@@ -111,6 +111,9 @@ npm run dev -- view tui --name <bot-name> --app-id 440 --context-id 2
 옵션:
 - `--allow-public-fallback`: 세션이 없거나 만료된 경우 공개 인벤토리 조회를 시도
 
+디버그:
+- `--debug` 활성화 시 `BotSessionService`, `BotInventoryQueryService` 흐름 로그가 출력됩니다.
+
 ## Troubleshooting
 
 - `The table ... does not exist`

@@ -6,8 +6,10 @@ import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-
 import { PrismaBotInventoryRepository } from "./adapter/persistence/prisma/prisma-bot-inventory-repository";
 import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "./adapter/steam/steam-authenticated-inventory-provider";
+import { debugLog, setDebugEnabled } from "./debug";
 import { BotInventoryRefreshService } from "./core/usecase/bot-inventory-refresh-service";
 import { BotInventoryQueryService, type InventorySkipReason } from "./core/usecase/bot-inventory-query-service";
+import type { DebugLogger } from "./core/usecase/debug-logger";
 import { BotSessionService } from "./core/usecase/bot-session-service";
 import { renderCliByBots } from "./presentation/cli";
 import { runTuiByBots } from "./presentation/tui";
@@ -205,23 +207,38 @@ async function runRefreshOnce(options: BotRefreshOptions): Promise<void> {
 }
 
 const program = new Command();
+const debugEnabled = process.argv.includes("--debug");
+setDebugEnabled(debugEnabled);
+const debugLogger: DebugLogger = (scope, message, meta) => {
+  debugLog(scope, message, meta);
+};
 const steamProvider = new SteamAuthenticatedInventoryProvider();
 const steamAuthGateway = new SteamSessionAuthGateway();
 const prisma = new PrismaClient();
 const botSessionRepository = new PrismaBotSessionRepository(prisma);
 const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
-const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway);
+const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway, debugLogger);
 const botInventoryRefreshService = new BotInventoryRefreshService(
   botSessionRepository,
   steamProvider,
-  botInventoryRepository
+  botInventoryRepository,
+  debugLogger
 );
-const botInventoryQueryService = new BotInventoryQueryService(botSessionRepository);
+const botInventoryQueryService = new BotInventoryQueryService(botSessionRepository, debugLogger);
 
 program
   .name("ryusen")
   .description("Steam bot inventory and session manager")
+  .option("--debug", "Enable debug logs for command flow")
   .showHelpAfterError();
+
+program.hook("preAction", (_thisCommand, actionCommand) => {
+  debugLog("index", "command:start", {
+    command: actionCommand.name(),
+    args: actionCommand.args,
+    opts: actionCommand.opts(),
+  });
+});
 
 const bot = program.command("bot").description("Mutating bot operations");
 const ls = program.command("ls").description("List resources");

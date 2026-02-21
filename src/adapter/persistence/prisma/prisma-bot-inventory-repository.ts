@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { debugLog } from "../../../debug";
 import type {
   BotInventoryRepository,
   BotInventoryWriteItem,
@@ -18,6 +19,13 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
     contextId: string,
     items: BotInventoryWriteItem[]
   ): Promise<void> {
+    debugLog("PrismaBotInventoryRepository", "replaceBotHoldings:start", {
+      botId,
+      appId,
+      contextId,
+      itemCount: items.length,
+    });
+
     await this.prisma.$transaction(async (tx) => {
       const keptItemIds: string[] = [];
 
@@ -87,6 +95,13 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
         },
       });
     });
+
+    debugLog("PrismaBotInventoryRepository", "replaceBotHoldings:done", {
+      botId,
+      appId,
+      contextId,
+      itemCount: items.length,
+    });
   }
 
   async listBotsBySku(input: {
@@ -94,6 +109,7 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
     contextId: string;
     sku: string;
   }): Promise<BotItemHolder[]> {
+    debugLog("PrismaBotInventoryRepository", "listBotsBySku:start", input);
     const rows = await this.prisma.botHasItem.findMany({
       where: {
         item: {
@@ -118,6 +134,8 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
         },
       },
     });
+
+    debugLog("PrismaBotInventoryRepository", "listBotsBySku:done", { count: rows.length });
 
     return rows.map((row) => ({
       botName: row.bot.name,

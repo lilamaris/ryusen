@@ -66,6 +66,10 @@
 
 ## Session Management Flow
 
+- Global option: `--debug`
+  - Enables debug logs for command orchestration and `src/**` flow traces.
+  - Covers core usecases, Prisma repositories, Steam adapters, and presentation entrypoints.
+
 - `view cli`
   - Renders one inventory query in console table format.
   - Resolves target bots by `--name` or `--all` and then renders merged results.

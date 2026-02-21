@@ -63,6 +63,16 @@ npm run dev -- bot watch --app-id 440 --context-id 2 --interval-seconds 120
 
 ```bash
 npm run dev -- ls items --app-id 440 --context-id 2 --sku <tf2-sku>
+
+### 디버그 로그 활성화
+
+```bash
+npm run dev -- --debug view cli --name <bot-name> --app-id 440 --context-id 2
+```
+
+인벤토리 관련 usecase(`BotInventoryQueryService`, `BotInventoryRefreshService`) 흐름 로그를 출력합니다.
+
+추가로 `--debug`는 Steam adapter, Prisma repository, presentation 레이어(`view cli/tui/web`)에도 적용됩니다.
 ```
 
 ## Troubleshooting

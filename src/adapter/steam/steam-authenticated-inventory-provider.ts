@@ -1,4 +1,5 @@
 import type { InventoryItem, InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
+import { debugLog } from "../../debug";
 import { toTf2Sku } from "./tf2-sku";
 
 type SteamAsset = {
@@ -81,9 +82,18 @@ function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): Invent
 
 export class SteamAuthenticatedInventoryProvider implements InventoryProvider<InventoryQuery> {
   async listItems(query: InventoryQuery): Promise<InventoryItem[]> {
+    debugLog("SteamAuthenticatedInventoryProvider", "listItems:start", {
+      steamId: query.steamId,
+      appId: query.appId,
+      contextId: query.contextId,
+      hasWebCookies: Boolean(query.webCookies && query.webCookies.length > 0),
+      webCookiesCount: query.webCookies?.length ?? 0,
+    });
+
     const allAssets: SteamAsset[] = [];
     const allDescriptions: SteamDescription[] = [];
     let startAssetId: string | null = null;
+    let pageCount = 0;
 
     while (true) {
       const url = new URL(
@@ -97,6 +107,10 @@ export class SteamAuthenticatedInventoryProvider implements InventoryProvider<In
 
       let response: Response;
       try {
+        debugLog("SteamAuthenticatedInventoryProvider", "listItems:fetch", {
+          url: url.toString(),
+          hasCookieHeader: Boolean(query.webCookies && query.webCookies.length > 0),
+        });
         if (query.webCookies && query.webCookies.length > 0) {
           response = await fetch(url, {
             headers: { Cookie: query.webCookies.join("; ") },
@@ -124,6 +138,7 @@ export class SteamAuthenticatedInventoryProvider implements InventoryProvider<In
       if (page.descriptions) {
         allDescriptions.push(...page.descriptions);
       }
+      pageCount += 1;
 
       if (page.more_items === 1 && page.last_assetid) {
         startAssetId = page.last_assetid;
@@ -133,6 +148,13 @@ export class SteamAuthenticatedInventoryProvider implements InventoryProvider<In
       break;
     }
 
-    return toItems(allAssets, allDescriptions);
+    const items = toItems(allAssets, allDescriptions);
+    debugLog("SteamAuthenticatedInventoryProvider", "listItems:done", {
+      pageCount,
+      assetCount: allAssets.length,
+      descriptionCount: allDescriptions.length,
+      itemCount: items.length,
+    });
+    return items;
   }
 }

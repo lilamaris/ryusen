@@ -3,6 +3,7 @@ import {
   EAuthTokenPlatformType,
   LoginSession,
 } from "steam-session";
+import { debugLog } from "../../debug";
 import type { SteamAuthGateway, SteamAuthResult, SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
 
 type StartSessionResponse = {
@@ -53,6 +54,7 @@ function toError(error: unknown): Error {
 
 async function waitForAuthentication(session: LoginSession): Promise<void> {
   if (session.refreshToken) {
+    debugLog("SteamSessionAuthGateway", "waitForAuthentication:alreadyAuthenticated");
     return;
   }
 
@@ -90,6 +92,7 @@ async function handleGuardActions(
   prompts: SteamGuardPrompts
 ): Promise<void> {
   if (!startResponse.actionRequired) {
+    debugLog("SteamSessionAuthGateway", "handleGuardActions:noneRequired");
     await waitForAuthentication(session);
     return;
   }
@@ -99,6 +102,10 @@ async function handleGuardActions(
   const needsEmailCode = actions.some((action) => action.type === EAuthSessionGuardType.EmailCode);
 
   if (needsDeviceCode || needsEmailCode) {
+    debugLog("SteamSessionAuthGateway", "handleGuardActions:guardCodeRequired", {
+      needsDeviceCode,
+      needsEmailCode,
+    });
     const label = needsDeviceCode ? "Steam mobile OTP code" : "Steam email guard code";
     const guardCode = await prompts.requestGuardCode(`Enter ${label}`);
     await session.submitSteamGuardCode(guardCode.trim());
@@ -113,6 +120,7 @@ async function handleGuardActions(
   );
 
   if (waitsForConfirmation) {
+    debugLog("SteamSessionAuthGateway", "handleGuardActions:pendingConfirmation");
     await prompts.notifyPendingConfirmation(
       "Approve the sign-in request in Steam mobile app/email confirmation, then press Enter."
     );
@@ -129,6 +137,10 @@ export class SteamSessionAuthGateway implements SteamAuthGateway {
     password: string;
     prompts: SteamGuardPrompts;
   }): Promise<SteamAuthResult> {
+    debugLog("SteamSessionAuthGateway", "authenticateWithCredentials:start", {
+      accountName: input.accountName,
+    });
+
     const session = new LoginSession(EAuthTokenPlatformType.WebBrowser);
 
     const startResponse = (await session.startWithCredentials({
@@ -137,6 +149,7 @@ export class SteamSessionAuthGateway implements SteamAuthGateway {
     })) as StartSessionResponse;
 
     await handleGuardActions(session, startResponse, input.prompts);
+    debugLog("SteamSessionAuthGateway", "authenticateWithCredentials:authenticated");
 
     const cookies = await session.getWebCookies();
     const sessionId = findCookieValue(cookies, "sessionid");
@@ -145,6 +158,11 @@ export class SteamSessionAuthGateway implements SteamAuthGateway {
     }
 
     const expiresAt = findCookieExpiresAt(cookies) ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    debugLog("SteamSessionAuthGateway", "authenticateWithCredentials:done", {
+      webCookiesCount: cookies.length,
+      expiresAt: expiresAt.toISOString(),
+    });
 
     return {
       sessionToken: sessionId,

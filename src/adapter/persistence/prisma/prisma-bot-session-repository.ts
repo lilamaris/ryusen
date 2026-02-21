@@ -2,6 +2,7 @@ import {
   PrismaClient,
   type BotSession as PrismaBotSession,
 } from "@prisma/client";
+import { debugLog } from "../../../debug";
 import type { Bot, BotSession } from "../../../core/bot/bot-session";
 import type { BotSessionRepository } from "../../../core/port/bot-session-repository";
 
@@ -39,6 +40,11 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
     steamId: string;
     accountName: string;
   }): Promise<Bot> {
+    debugLog("PrismaBotSessionRepository", "createBot:start", {
+      name: input.name,
+      steamId: input.steamId,
+      accountName: input.accountName,
+    });
     const record = await this.prisma.bot.create({
       data: input,
       select: {
@@ -48,10 +54,12 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         accountName: true,
       },
     });
+    debugLog("PrismaBotSessionRepository", "createBot:done", { id: record.id, name: record.name });
     return toBot(record);
   }
 
   async findBotByName(name: string): Promise<Bot | null> {
+    debugLog("PrismaBotSessionRepository", "findBotByName", { name });
     const record = await this.prisma.bot.findUnique({
       where: { name },
       select: {
@@ -65,6 +73,7 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
   }
 
   async listBots(): Promise<Bot[]> {
+    debugLog("PrismaBotSessionRepository", "listBots:start");
     const records = await this.prisma.bot.findMany({
       orderBy: { name: "asc" },
       select: {
@@ -74,10 +83,12 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         accountName: true,
       },
     });
+    debugLog("PrismaBotSessionRepository", "listBots:done", { count: records.length });
     return records.map(toBot);
   }
 
   async listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+    debugLog("PrismaBotSessionRepository", "listBotsWithSessions:start");
     const records = await this.prisma.bot.findMany({
       orderBy: { name: "asc" },
       select: {
@@ -88,6 +99,7 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         session: true,
       },
     });
+    debugLog("PrismaBotSessionRepository", "listBotsWithSessions:done", { count: records.length });
 
     return records.map((record) => ({
       bot: toBot(record),
@@ -101,6 +113,11 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
     webCookies: string[];
     expiresAt: Date;
   }): Promise<BotSession> {
+    debugLog("PrismaBotSessionRepository", "upsertSession:start", {
+      botId: input.botId,
+      expiresAt: input.expiresAt.toISOString(),
+      webCookiesCount: input.webCookies.length,
+    });
     const record = await this.prisma.botSession.upsert({
       where: { botId: input.botId },
       create: input,
@@ -110,11 +127,13 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
         expiresAt: input.expiresAt,
       },
     });
+    debugLog("PrismaBotSessionRepository", "upsertSession:done", { botId: input.botId });
 
     return toSession(record);
   }
 
   async findSessionByBotId(botId: string): Promise<BotSession | null> {
+    debugLog("PrismaBotSessionRepository", "findSessionByBotId", { botId });
     const record = await this.prisma.botSession.findUnique({
       where: { botId },
     });
@@ -122,6 +141,10 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
   }
 
   async markSessionChecked(botId: string, checkedAt: Date): Promise<void> {
+    debugLog("PrismaBotSessionRepository", "markSessionChecked", {
+      botId,
+      checkedAt: checkedAt.toISOString(),
+    });
     await this.prisma.botSession.update({
       where: { botId },
       data: { lastCheckedAt: checkedAt },
