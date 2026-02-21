@@ -3,12 +3,8 @@ import assert from "node:assert/strict";
 import { BotInventoryRefreshService } from "./bot-inventory-refresh-service";
 import type { BotSessionRepository } from "../port/bot-session-repository";
 import type { Bot, BotSession } from "../bot/bot-session";
-import type {
-  AuthenticatedInventoryItem,
-  AuthenticatedInventoryProvider,
-  AuthenticatedInventoryQuery,
-} from "../port/authenticated-inventory-provider";
 import type { BotInventoryRepository, BotInventoryWriteItem } from "../port/bot-inventory-repository";
+import type { InventoryItem, InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
 
 class FakeSessionRepository implements BotSessionRepository {
   constructor(private readonly rows: Array<{ bot: Bot; session: BotSession | null }>) {}
@@ -42,10 +38,10 @@ class FakeSessionRepository implements BotSessionRepository {
   }
 }
 
-class FakeInventoryProvider implements AuthenticatedInventoryProvider {
-  public calls: AuthenticatedInventoryQuery[] = [];
+class FakeInventoryProvider implements InventoryProvider<InventoryQuery> {
+  public calls: InventoryQuery[] = [];
 
-  listItems(query: AuthenticatedInventoryQuery): Promise<AuthenticatedInventoryItem[]> {
+  listItems(query: InventoryQuery): Promise<InventoryItem[]> {
     this.calls.push(query);
     if (query.steamId === "steam-fail") {
       return Promise.reject(new Error("inventory fetch failed"));
@@ -53,6 +49,7 @@ class FakeInventoryProvider implements AuthenticatedInventoryProvider {
 
     return Promise.resolve([
       {
+        key: "111_222",
         sku: "5021",
         itemKey: "111_222",
         name: "Mann Co. Supply Crate Key",

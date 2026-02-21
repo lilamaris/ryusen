@@ -1,8 +1,4 @@
-import type {
-  AuthenticatedInventoryItem,
-  AuthenticatedInventoryProvider,
-  AuthenticatedInventoryQuery,
-} from "../../core/port/authenticated-inventory-provider";
+import type { InventoryItem, InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
 import { toTf2Sku } from "./tf2-sku";
 
 type SteamAsset = {
@@ -47,9 +43,9 @@ function createDescriptionMap(descriptions: SteamDescription[]): Map<string, Ste
   return map;
 }
 
-function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): AuthenticatedInventoryItem[] {
+function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): InventoryItem[] {
   const descriptionMap = createDescriptionMap(descriptions);
-  const itemMap = new Map<string, AuthenticatedInventoryItem>();
+  const itemMap = new Map<string, InventoryItem>();
 
   for (const asset of assets) {
     const itemKey = `${asset.classid}_${asset.instanceid}`;
@@ -60,7 +56,8 @@ function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): Authen
     }
 
     const description = descriptionMap.get(itemKey);
-    const item: AuthenticatedInventoryItem = {
+    const item: InventoryItem = {
+      key: itemKey,
       sku: toTf2Sku(description ?? null, itemKey),
       itemKey,
       name: description?.name ?? "Unknown Item",
@@ -82,8 +79,8 @@ function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): Authen
   return [...itemMap.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
 }
 
-export class SteamAuthenticatedInventoryProvider implements AuthenticatedInventoryProvider {
-  async listItems(query: AuthenticatedInventoryQuery): Promise<AuthenticatedInventoryItem[]> {
+export class SteamAuthenticatedInventoryProvider implements InventoryProvider<InventoryQuery> {
+  async listItems(query: InventoryQuery): Promise<InventoryItem[]> {
     const allAssets: SteamAsset[] = [];
     const allDescriptions: SteamDescription[] = [];
     let startAssetId: string | null = null;
@@ -98,11 +95,19 @@ export class SteamAuthenticatedInventoryProvider implements AuthenticatedInvento
         url.searchParams.set("start_assetid", startAssetId);
       }
 
-      const response = await fetch(url, {
-        headers: {
-          Cookie: query.webCookies.join("; "),
-        },
-      });
+      let response: Response;
+      try {
+        if (query.webCookies && query.webCookies.length > 0) {
+          response = await fetch(url, {
+            headers: { Cookie: query.webCookies.join("; ") },
+          });
+        } else {
+          response = await fetch(url);
+        }
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : "unknown network error";
+        throw new Error(`Steam API network error (${url.toString()}): ${reason}`, { cause: error });
+      }
 
       if (!response.ok) {
         throw new Error(`Steam inventory request failed: ${response.status} ${response.statusText}`);

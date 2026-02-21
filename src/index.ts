@@ -6,7 +6,6 @@ import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-
 import { PrismaBotInventoryRepository } from "./adapter/persistence/prisma/prisma-bot-inventory-repository";
 import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "./adapter/steam/steam-authenticated-inventory-provider";
-import { SteamInventoryProvider } from "./adapter/steam/steam-inventory-provider";
 import type { InventoryQuery } from "./core/provider/inventory-provider";
 import { BotInventoryRefreshService } from "./core/usecase/bot-inventory-refresh-service";
 import { BotSessionService } from "./core/usecase/bot-session-service";
@@ -105,8 +104,7 @@ async function runRefreshOnce(options: BotRefreshOptions): Promise<void> {
 }
 
 const program = new Command();
-const steamProvider = new SteamInventoryProvider();
-const authenticatedInventoryProvider = new SteamAuthenticatedInventoryProvider();
+const steamProvider = new SteamAuthenticatedInventoryProvider();
 const steamAuthGateway = new SteamSessionAuthGateway();
 const prisma = new PrismaClient();
 const botSessionRepository = new PrismaBotSessionRepository(prisma);
@@ -114,7 +112,7 @@ const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
 const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway);
 const botInventoryRefreshService = new BotInventoryRefreshService(
   botSessionRepository,
-  authenticatedInventoryProvider,
+  steamProvider,
   botInventoryRepository
 );
 

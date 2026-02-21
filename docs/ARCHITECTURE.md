@@ -19,16 +19,13 @@
   - Persistence port for bot-to-item holdings snapshot and item-holder lookups.
 - `src/core/port/steam-auth-gateway.ts`
   - Auth gateway port for Steam credential + guard-code login.
-- `src/core/port/authenticated-inventory-provider.ts`
-  - Inventory provider port that uses authenticated web session cookies.
 - `src/core/usecase/bot-session-service.ts`
   - Use case for bot register, add+authenticate, re-authenticate, and session status checks.
 - `src/core/usecase/bot-inventory-refresh-service.ts`
   - Use case for periodic bot inventory refresh and persistence.
-- `src/adapter/steam/steam-inventory-provider.ts`
-  - `SteamInventoryProvider` implementation for Steam Web inventory API.
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
-  - Authenticated Steam inventory fetch using persisted web cookies.
+  - Single Steam inventory adapter for both public and authenticated requests.
+  - Uses `InventoryProvider` contract and optional web cookies from query.
 - `src/adapter/steam/steam-auth-gateway.ts`
   - `SteamSessionAuthGateway` implementation using `steam-session`.
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`

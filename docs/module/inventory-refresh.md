@@ -8,12 +8,12 @@
 
 - `src/core/usecase/bot-inventory-refresh-service.ts`
   - 전체 봇 갱신 오케스트레이션 (`refreshAll`)
-- `src/core/port/authenticated-inventory-provider.ts`
-  - 세션 쿠키 기반 인벤토리 조회 포트
+- `src/core/provider/inventory-provider.ts`
+  - 공통 인벤토리 조회 계약 (`InventoryProvider`, `InventoryQuery`)
 - `src/core/port/bot-inventory-repository.ts`
   - 아이템/보유 상태 저장 포트
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
-  - Steam web cookie를 이용한 인벤토리 조회 구현
+  - Steam 공개/인증 조회를 단일 구현으로 처리
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma 기반 `Item`, `BotHasItem` 갱신 구현
 - `src/index.ts`

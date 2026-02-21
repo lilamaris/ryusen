@@ -1,6 +1,6 @@
 import type { BotInventoryRepository } from "../port/bot-inventory-repository";
 import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { AuthenticatedInventoryProvider } from "../port/authenticated-inventory-provider";
+import type { InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
 
 export type RefreshAllResult = {
   totalBots: number;
@@ -13,7 +13,7 @@ export type RefreshAllResult = {
 export class BotInventoryRefreshService {
   constructor(
     private readonly sessions: BotSessionRepository,
-    private readonly inventoryProvider: AuthenticatedInventoryProvider,
+    private readonly inventoryProvider: InventoryProvider<InventoryQuery>,
     private readonly inventoryRepository: BotInventoryRepository
   ) {}
 
