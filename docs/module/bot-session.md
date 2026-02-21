@@ -13,7 +13,7 @@
 - `src/core/port/steam-auth-gateway.ts`
   - Steam 인증 포트 (credential + guard-code)
 - `src/core/usecase/bot-session-service.ts`
-  - bot add/auth/session-check 유스케이스
+  - bot register/add/auth/session-check 유스케이스
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma 저장소 구현
 - `src/adapter/steam/steam-auth-gateway.ts`
@@ -58,6 +58,12 @@
 - 출력: `hasSession`, `isValid`, `expiresAt`, `lastCheckedAt`
 
 ## CLI Usage
+
+### 봇 메타만 선등록
+
+```bash
+npm run dev -- bot register --name <bot-name> --steam-id <steam-id64> --account-name <steam-login-id>
+```
 
 ### 신규 봇 등록 + 즉시 인증
 

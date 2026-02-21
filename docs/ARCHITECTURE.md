@@ -26,6 +26,8 @@
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Single Steam inventory adapter for both public and authenticated requests.
   - Uses `InventoryProvider` contract and optional web cookies from query.
+- `src/adapter/steam/tf2-sku.ts`
+  - Converts Steam item metadata into TF2-style SKU (`def_index` + attribute tokens).
 - `src/adapter/steam/steam-auth-gateway.ts`
   - `SteamSessionAuthGateway` implementation using `steam-session`.
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
@@ -64,10 +66,13 @@
 
 - `bot cli`
   - Renders one inventory query in console table format.
+  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
 - `bot tui`
   - Renders one inventory query in terminal UI format.
+  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
 - `bot web`
   - Starts web UI server for interactive inventory query.
+  - Uses the same Steam adapter as refresh flow (public mode when cookies are absent).
 
 - `bot add`
   - Authenticates via Steam credentials first, then creates/updates bot session state.

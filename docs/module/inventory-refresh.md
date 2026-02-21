@@ -14,6 +14,8 @@
   - 아이템/보유 상태 저장 포트
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Steam 공개/인증 조회를 단일 구현으로 처리
+- `src/adapter/steam/tf2-sku.ts`
+  - Steam description 메타에서 TF2 스타일 SKU 생성
 - `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
   - Prisma 기반 `Item`, `BotHasItem` 갱신 구현
 - `src/index.ts`
