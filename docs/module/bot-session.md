@@ -60,8 +60,9 @@
 
 1. CLI collects password and guard prompts callbacks.
 2. `BotSessionService.addOrAuthenticateBot` authenticates via `SteamAuthGateway`.
-3. If bot exists, validates `steamId/accountName` consistency.
-4. Upserts `BotSession` with `sessionToken`, `webCookies`, `expiresAt`.
+3. Guard code 입력이 필요하면 현재 대상 봇 메타데이터(`mode`, `bot`, `account`, `steamId`)가 박스 형태로 표시됨.
+4. If bot exists, validates `steamId/accountName` consistency.
+5. Upserts `BotSession` with `sessionToken`, `webCookies`, `expiresAt`.
 
 ### Flow: `bot reauth`
 
@@ -86,6 +87,7 @@
   - upserts bot identity using `steamId` as stable key and `alias` as bot name.
   - optionally stores `sharedSecret`/`identitySecret`.
   - authenticates each account and upserts session cookies/expiry.
+  - each Steam Guard prompt includes current account metadata box so operator can identify which bot needs OTP.
 4. CLI prints per-bot sync result rows and summary counts.
 
 ### Flow: `bot sync-secrets`
@@ -136,6 +138,7 @@ npm run dev -- bot sync --from-yaml-file <bots.yaml> [--secrets-yaml-file <secre
 
 - `--from-yaml-file` / `--secrets-yaml-file` 는 프로젝트 루트 기준 `.ryusen/secret` 내부 파일명으로 해석됨.
 - 예: `--from-yaml-file bots.yaml` 는 `.ryusen/secret/bots.yaml` 를 읽음.
+- `--from-yaml-file` 생략 시 기본값은 `bots.yaml`.
 
 `bots.yaml`:
 
@@ -161,6 +164,8 @@ secrets:
 ```bash
 npm run dev -- bot sync-secrets --from-yaml-file <secrets.yaml>
 ```
+
+- `--from-yaml-file` 생략 시 기본값은 `secrets.yaml`.
 
 ### Bootstrap authenticator and extract secrets automatically
 

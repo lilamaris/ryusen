@@ -86,7 +86,12 @@ export class BotSessionService {
     const authResult = await this.steamAuthGateway.authenticateWithCredentials({
       accountName: input.accountName,
       password: input.password,
-      prompts: input.prompts,
+      prompts: this.withGuardPromptContext(input.prompts, {
+        mode: "connect",
+        botName: input.name,
+        steamId: input.steamId,
+        accountName: input.accountName,
+      }),
     });
     this.debug("addOrAuthenticateBot:authenticated", {
       name: input.name,
@@ -153,7 +158,12 @@ export class BotSessionService {
     const authResult = await this.steamAuthGateway.authenticateWithCredentials({
       accountName: bot.accountName,
       password: input.password,
-      prompts: input.prompts,
+      prompts: this.withGuardPromptContext(input.prompts, {
+        mode: "reauth",
+        botName: bot.name,
+        steamId: bot.steamId,
+        accountName: bot.accountName,
+      }),
     });
     this.debug("reauthenticateBot:authenticated", {
       botName: input.botName,
@@ -203,11 +213,18 @@ export class BotSessionService {
       throw new Error(`Bot not found: ${input.botName}`);
     }
 
+    const contextualPrompts = this.withGuardPromptContext(input.prompts, {
+      mode: "bootstrap-authenticator",
+      botName: bot.name,
+      steamId: bot.steamId,
+      accountName: bot.accountName,
+    });
+
     const bootstrap = await this.steamMobileAuthGateway.enableAndFinalizeTwoFactor({
       accountName: bot.accountName,
       password: input.password,
-      prompts: input.prompts,
-      requestActivationCode: (message: string) => input.prompts.requestGuardCode(message),
+      prompts: contextualPrompts,
+      requestActivationCode: (message: string) => contextualPrompts.requestGuardCode(message),
     });
 
     const onboardingStartedAt = new Date();
@@ -287,7 +304,12 @@ export class BotSessionService {
         const authResult = await this.steamAuthGateway.authenticateWithCredentials({
           accountName,
           password,
-          prompts: input.prompts,
+          prompts: this.withGuardPromptContext(input.prompts, {
+            mode: "sync",
+            botName: alias,
+            steamId,
+            accountName,
+          }),
         });
 
         await this.repository.upsertSession({
@@ -528,5 +550,34 @@ export class BotSessionService {
     }
 
     return bot;
+  }
+
+  private withGuardPromptContext(
+    prompts: SteamGuardPrompts,
+    context: {
+      mode: "connect" | "reauth" | "sync" | "bootstrap-authenticator";
+      botName: string;
+      steamId: string;
+      accountName: string;
+    }
+  ): SteamGuardPrompts {
+    const header = [
+      "",
+      "+--------------------------------------------------+",
+      "| Steam Guard Verification Required                |",
+      "+--------------------------------------------------+",
+      `| mode       : ${context.mode}`,
+      `| bot        : ${context.botName}`,
+      `| account    : ${context.accountName}`,
+      `| steamId    : ${context.steamId}`,
+      "+--------------------------------------------------+",
+    ].join("\n");
+
+    return {
+      requestGuardCode: async (message: string): Promise<string> =>
+        prompts.requestGuardCode(`${header}\n${message}`),
+      notifyPendingConfirmation: async (message: string): Promise<void> =>
+        prompts.notifyPendingConfirmation(`${header}\n${message}`),
+    };
   }
 }
