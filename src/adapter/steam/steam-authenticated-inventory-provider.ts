@@ -3,6 +3,7 @@ import type {
   AuthenticatedInventoryProvider,
   AuthenticatedInventoryQuery,
 } from "../../core/port/authenticated-inventory-provider";
+import { toTf2Sku } from "./tf2-sku";
 
 type SteamAsset = {
   classid: string;
@@ -16,6 +17,18 @@ type SteamDescription = {
   name: string;
   market_hash_name?: string;
   icon_url?: string;
+  app_data?: {
+    def_index?: string;
+  };
+  tags?: Array<{
+    category?: string;
+    internal_name?: string;
+    localized_tag_name?: string;
+    name?: string;
+  }>;
+  descriptions?: Array<{
+    value?: string;
+  }>;
 };
 
 type SteamInventoryPage = {
@@ -48,6 +61,7 @@ function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): Authen
 
     const description = descriptionMap.get(itemKey);
     const item: AuthenticatedInventoryItem = {
+      sku: toTf2Sku(description ?? null, itemKey),
       itemKey,
       name: description?.name ?? "Unknown Item",
       marketHashName: description?.market_hash_name ?? "",

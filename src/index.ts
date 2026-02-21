@@ -46,7 +46,7 @@ type BotRefreshLoopOptions = BotRefreshOptions & {
 };
 
 type BotItemHoldersOptions = BotRefreshOptions & {
-  itemKey: string;
+  sku: string;
 };
 
 function getQueryOptions(options: QueryOptions): InventoryQuery {
@@ -261,14 +261,14 @@ bot
 
 bot
   .command("item-holders")
-  .requiredOption("--item-key <itemKey>", "Item key (currently classid_instanceid)")
+  .requiredOption("--sku <sku>", "TF2-style SKU (defindex + attributes)")
   .option("--app-id <appId>", "App ID", "440")
   .option("--context-id <contextId>", "Context ID", "2")
   .action(async (options: BotItemHoldersOptions) => {
-    const holders = await botInventoryRepository.listBotsByItemKey({
+    const holders = await botInventoryRepository.listBotsBySku({
       appId: Number(options.appId),
       contextId: options.contextId,
-      itemKey: options.itemKey,
+      sku: options.sku,
     });
 
     if (holders.length === 0) {

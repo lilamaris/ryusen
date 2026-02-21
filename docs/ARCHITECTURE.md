@@ -58,7 +58,8 @@
   - One current session per bot (`botId` unique).
   - Stores `sessionToken`, `webCookies`, `expiresAt`, `lastCheckedAt`.
 - `Item`
-  - Normalized item catalog per app/context and `itemKey` (`classid_instanceid`).
+  - Normalized item catalog per app/context and `sku`.
+  - `sku` is generated from TF2 `def_index` + selected attributes (killstreak, quality, unusual effect, wear, etc.).
 - `BotHasItem`
   - Per-bot inventory snapshot (`botId`, `itemId`, `amount`, `lastSeenAt`, `rawPayload`).
 
@@ -78,7 +79,7 @@
 - `bot refresh-loop`
   - Runs periodic refresh (`--interval-seconds`, default 120).
 - `bot item-holders`
-  - Lists which bots currently hold a given `itemKey`.
+  - Lists which bots currently hold a given `sku`.
 
 ## Update Policy
 

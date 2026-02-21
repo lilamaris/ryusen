@@ -22,8 +22,9 @@
 ## Data Model
 
 - `Item`
-  - `appId`, `contextId`, `itemKey` 유니크
-  - `itemKey`는 현재 `classid_instanceid` 형식
+  - `appId`, `contextId`, `sku` 유니크
+  - `sku`는 TF2 `def_index` + 속성 토큰 기반 (예: `5033;ks-1;st`)
+  - `itemKey(classid_instanceid)`는 원본 참조값으로 보조 저장
   - 공용 메타(`name`, `marketHashName`, `iconUrl`) 저장
 - `BotHasItem`
   - `(botId, itemId)` 유니크
@@ -56,7 +57,7 @@ npm run dev -- bot refresh-loop --app-id 440 --context-id 2 --interval-seconds 1
 ### 특정 아이템 보유 봇 조회
 
 ```bash
-npm run dev -- bot item-holders --app-id 440 --context-id 2 --item-key <classid_instanceid>
+npm run dev -- bot item-holders --app-id 440 --context-id 2 --sku <tf2-sku>
 ```
 
 ## Troubleshooting
@@ -66,4 +67,4 @@ npm run dev -- bot item-holders --app-id 440 --context-id 2 --item-key <classid_
 - `Steam inventory request failed: 403 Forbidden`
   - 세션 만료/쿠키 무효 가능성이 큽니다. 재인증 후 재시도하세요.
 - 조회는 되지만 `item-holders` 결과가 비어 있는 경우
-  - `itemKey`를 정확히 `classid_instanceid`로 입력했는지 확인하세요.
+  - `sku`를 정확히 입력했는지 확인하세요. (`def_index` 누락 아이템은 `raw-<classid_instanceid>` 형식)

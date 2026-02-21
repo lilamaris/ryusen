@@ -11,6 +11,7 @@ model Item {
   id             String       @id @default(cuid())
   appId          Int
   contextId      String
+  sku            String
   itemKey        String
   name           String
   marketHashName String
@@ -19,8 +20,8 @@ model Item {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  @@unique([appId, contextId, itemKey])
-  @@index([itemKey])
+  @@unique([appId, contextId, sku])
+  @@index([sku])
 }
 
 model BotHasItem {

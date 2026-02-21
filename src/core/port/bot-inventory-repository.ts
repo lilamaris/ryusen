@@ -1,6 +1,7 @@
 export type BotInventoryWriteItem = {
   appId: number;
   contextId: string;
+  sku: string;
   itemKey: string;
   name: string;
   marketHashName: string;
@@ -19,5 +20,5 @@ export type BotItemHolder = {
 
 export interface BotInventoryRepository {
   replaceBotHoldings(botId: string, appId: number, contextId: string, items: BotInventoryWriteItem[]): Promise<void>;
-  listBotsByItemKey(input: { appId: number; contextId: string; itemKey: string }): Promise<BotItemHolder[]>;
+  listBotsBySku(input: { appId: number; contextId: string; sku: string }): Promise<BotItemHolder[]>;
 }

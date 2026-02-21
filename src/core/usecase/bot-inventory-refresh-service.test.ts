@@ -53,6 +53,7 @@ class FakeInventoryProvider implements AuthenticatedInventoryProvider {
 
     return Promise.resolve([
       {
+        sku: "5021",
         itemKey: "111_222",
         name: "Mann Co. Supply Crate Key",
         marketHashName: "Mann Co. Supply Crate Key",
@@ -81,7 +82,7 @@ class FakeBotInventoryRepository implements BotInventoryRepository {
     return Promise.resolve();
   }
 
-  listBotsByItemKey(): Promise<Array<{ botName: string; steamId: string; amount: number; lastSeenAt: Date }>> {
+  listBotsBySku(): Promise<Array<{ botName: string; steamId: string; amount: number; lastSeenAt: Date }>> {
     return Promise.resolve([]);
   }
 }

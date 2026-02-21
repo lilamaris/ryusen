@@ -6,6 +6,7 @@ export type AuthenticatedInventoryQuery = {
 };
 
 export type AuthenticatedInventoryItem = {
+  sku: string;
   itemKey: string;
   name: string;
   marketHashName: string;

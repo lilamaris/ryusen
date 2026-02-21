@@ -24,21 +24,23 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
       for (const item of items) {
         const upsertedItem = await tx.item.upsert({
           where: {
-            appId_contextId_itemKey: {
+            appId_contextId_sku: {
               appId: item.appId,
               contextId: item.contextId,
-              itemKey: item.itemKey,
+              sku: item.sku,
             },
           },
           create: {
             appId: item.appId,
             contextId: item.contextId,
+            sku: item.sku,
             itemKey: item.itemKey,
             name: item.name,
             marketHashName: item.marketHashName,
             iconUrl: item.iconUrl ?? null,
           },
           update: {
+            itemKey: item.itemKey,
             name: item.name,
             marketHashName: item.marketHashName,
             iconUrl: item.iconUrl ?? null,
@@ -87,17 +89,17 @@ export class PrismaBotInventoryRepository implements BotInventoryRepository {
     });
   }
 
-  async listBotsByItemKey(input: {
+  async listBotsBySku(input: {
     appId: number;
     contextId: string;
-    itemKey: string;
+    sku: string;
   }): Promise<BotItemHolder[]> {
     const rows = await this.prisma.botHasItem.findMany({
       where: {
         item: {
           appId: input.appId,
           contextId: input.contextId,
-          itemKey: input.itemKey,
+          sku: input.sku,
         },
       },
       orderBy: {

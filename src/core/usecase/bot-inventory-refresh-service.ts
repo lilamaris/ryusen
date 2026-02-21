@@ -52,6 +52,7 @@ export class BotInventoryRefreshService {
             ...(item.iconUrl ? { iconUrl: item.iconUrl } : {}),
             appId: input.appId,
             contextId: input.contextId,
+            sku: item.sku,
             itemKey: item.itemKey,
             name: item.name,
             marketHashName: item.marketHashName,
