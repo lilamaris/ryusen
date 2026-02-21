@@ -4,7 +4,10 @@ DROP TABLE IF EXISTS "steam_accounts";
 
 -- Add cookie persistence for private inventory refresh.
 ALTER TABLE "BotSession"
-ADD COLUMN "webCookies" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+ADD COLUMN IF NOT EXISTS "webCookies" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
+ALTER TABLE "BotSession"
+ALTER COLUMN "webCookies" DROP DEFAULT;
 
 -- Item catalog shared across bots.
 CREATE TABLE "Item" (

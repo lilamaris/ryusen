@@ -1,0 +1,2 @@
+-- Intentionally left as no-op.
+-- Historical placeholder migration kept so Prisma migration history remains continuous.

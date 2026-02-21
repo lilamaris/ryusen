@@ -1,3 +1,15 @@
+export type InventoryItemAsset = {
+  assetId: string;
+  classId: string;
+  instanceId: string;
+  amount: number;
+};
+
+export type InventoryItemRawPayload = {
+  assets: InventoryItemAsset[];
+  description: unknown;
+};
+
 export type InventoryItem = {
   key: string;
   itemKey: string;
@@ -6,7 +18,7 @@ export type InventoryItem = {
   marketHashName: string;
   quantity: number;
   iconUrl?: string;
-  rawPayload: unknown;
+  rawPayload: InventoryItemRawPayload;
 };
 
 export type InventoryQuery = {

@@ -80,7 +80,17 @@ void test("fetchBySelection returns inventories, skipped, and failures", async (
       name: "Alpha",
       marketHashName: "Alpha",
       quantity: 3,
-      rawPayload: {},
+      rawPayload: {
+        assets: [
+          {
+            assetId: "asset-1",
+            classId: "1",
+            instanceId: "0",
+            amount: 3,
+          },
+        ],
+        description: null,
+      },
     },
   ]);
   provider.failureSteamIds.add("200");

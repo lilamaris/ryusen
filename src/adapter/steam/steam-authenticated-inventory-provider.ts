@@ -1,10 +1,16 @@
-import type { InventoryItem, InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
+import type {
+  InventoryItem,
+  InventoryItemAsset,
+  InventoryProvider,
+  InventoryQuery,
+} from "../../core/provider/inventory-provider";
 import { debugLog } from "../../debug";
 import { toTf2Sku } from "./tf2-sku";
 
 type SteamAsset = {
   classid: string;
   instanceid: string;
+  assetid: string;
   amount: string;
 };
 
@@ -46,38 +52,70 @@ function createDescriptionMap(descriptions: SteamDescription[]): Map<string, Ste
 
 function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): InventoryItem[] {
   const descriptionMap = createDescriptionMap(descriptions);
-  const itemMap = new Map<string, InventoryItem>();
+  type AggregatedItem = {
+    quantity: number;
+  iconUrl?: string | undefined;
+    name: string;
+    marketHashName: string;
+    description: SteamDescription | null;
+    assetEntries: InventoryItemAsset[];
+  };
+
+  const aggregated = new Map<string, AggregatedItem>();
 
   for (const asset of assets) {
     const itemKey = `${asset.classid}_${asset.instanceid}`;
-    const found = itemMap.get(itemKey);
-    if (found) {
-      found.quantity += Number(asset.amount);
+    const description = descriptionMap.get(itemKey) ?? null;
+    const quantity = Number(asset.amount);
+    if (quantity <= 0) {
       continue;
     }
 
-    const description = descriptionMap.get(itemKey);
-    const item: InventoryItem = {
-      key: itemKey,
-      sku: toTf2Sku(description ?? null, itemKey),
-      itemKey,
-      name: description?.name ?? "Unknown Item",
-      marketHashName: description?.market_hash_name ?? "",
-      quantity: Number(asset.amount),
-      rawPayload: {
-        asset,
-        description: description ?? null,
-      },
+    const assetEntry: InventoryItemAsset = {
+      assetId: asset.assetid,
+      classId: asset.classid,
+      instanceId: asset.instanceid,
+      amount: quantity,
     };
 
-    if (description?.icon_url) {
-      item.iconUrl = description.icon_url;
+    const existing = aggregated.get(itemKey);
+    if (existing) {
+      existing.quantity += quantity;
+      existing.assetEntries.push(assetEntry);
+      continue;
     }
 
-    itemMap.set(itemKey, item);
+    aggregated.set(itemKey, {
+      quantity,
+      assetEntries: [assetEntry],
+      description,
+      name: description?.name ?? "Unknown Item",
+      marketHashName: description?.market_hash_name ?? "",
+      iconUrl: description?.icon_url,
+    });
   }
 
-  return [...itemMap.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+  const items = [];
+  for (const [itemKey, data] of aggregated.entries()) {
+    const item: InventoryItem = {
+      key: itemKey,
+      sku: toTf2Sku(data.description ?? null, itemKey),
+      itemKey,
+      name: data.name,
+      marketHashName: data.marketHashName,
+      quantity: data.quantity,
+      rawPayload: {
+        assets: data.assetEntries,
+        description: data.description,
+      },
+    };
+    if (data.iconUrl) {
+      item.iconUrl = data.iconUrl;
+    }
+    items.push(item);
+  }
+
+  return items.sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
 }
 
 export class SteamAuthenticatedInventoryProvider implements InventoryProvider<InventoryQuery> {
