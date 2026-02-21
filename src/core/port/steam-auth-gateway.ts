@@ -1,5 +1,6 @@
 export type SteamAuthResult = {
   sessionToken: string;
+  webCookies: string[];
   expiresAt: Date;
 };
 

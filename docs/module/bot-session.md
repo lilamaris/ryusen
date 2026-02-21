@@ -30,6 +30,7 @@
 - `BotSession`
   - `botId`: Bot 1:1 연결
   - `sessionToken`: 세션 토큰
+  - `webCookies`: 인증된 Steam web cookie 목록
   - `expiresAt`: 세션 만료 시각
   - `lastCheckedAt`: 마지막 유효성 점검 시각
 

@@ -58,6 +58,7 @@ void test("listBotSessions uses bulk session read and marks checked only for exi
       session: {
         botId: "bot-a",
         sessionToken: "token-a",
+        webCookies: ["sessionid=a"],
         expiresAt: new Date("2026-02-22T00:00:00.000Z"),
         lastCheckedAt: null,
       },
@@ -71,6 +72,7 @@ void test("listBotSessions uses bulk session read and marks checked only for exi
       session: {
         botId: "bot-c",
         sessionToken: "token-c",
+        webCookies: ["sessionid=c"],
         expiresAt: new Date("2026-02-20T00:00:00.000Z"),
         lastCheckedAt: null,
       },

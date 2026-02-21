@@ -3,9 +3,12 @@ import { Command } from "commander";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { PrismaBotSessionRepository } from "./adapter/persistence/prisma/prisma-bot-session-repository";
+import { PrismaBotInventoryRepository } from "./adapter/persistence/prisma/prisma-bot-inventory-repository";
 import { SteamSessionAuthGateway } from "./adapter/steam/steam-auth-gateway";
+import { SteamAuthenticatedInventoryProvider } from "./adapter/steam/steam-authenticated-inventory-provider";
 import { SteamInventoryProvider } from "./adapter/steam/steam-inventory-provider";
 import type { InventoryQuery } from "./core/provider/inventory-provider";
+import { BotInventoryRefreshService } from "./core/usecase/bot-inventory-refresh-service";
 import { BotSessionService } from "./core/usecase/bot-session-service";
 import { runCli } from "./presentation/cli";
 import { runTui } from "./presentation/tui";
@@ -31,6 +34,19 @@ type BotAuthOptions = {
 
 type BotCheckOptions = {
   name?: string;
+};
+
+type BotRefreshOptions = {
+  appId: string;
+  contextId: string;
+};
+
+type BotRefreshLoopOptions = BotRefreshOptions & {
+  intervalSeconds: string;
+};
+
+type BotItemHoldersOptions = BotRefreshOptions & {
+  itemKey: string;
 };
 
 function getQueryOptions(options: QueryOptions): InventoryQuery {
@@ -64,12 +80,43 @@ function buildPrompts() {
   };
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function runRefreshOnce(options: BotRefreshOptions): Promise<void> {
+  const result = await botInventoryRefreshService.refreshAll({
+    appId: Number(options.appId),
+    contextId: options.contextId,
+  });
+
+  console.table([
+    {
+      totalBots: result.totalBots,
+      updatedBots: result.updatedBots,
+      skippedBots: result.skippedBots,
+      failedBots: result.failedBots,
+    },
+  ]);
+
+  if (result.errors.length > 0) {
+    console.table(result.errors);
+  }
+}
+
 const program = new Command();
 const steamProvider = new SteamInventoryProvider();
+const authenticatedInventoryProvider = new SteamAuthenticatedInventoryProvider();
 const steamAuthGateway = new SteamSessionAuthGateway();
 const prisma = new PrismaClient();
 const botSessionRepository = new PrismaBotSessionRepository(prisma);
+const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
 const botSessionService = new BotSessionService(botSessionRepository, steamAuthGateway);
+const botInventoryRefreshService = new BotInventoryRefreshService(
+  botSessionRepository,
+  authenticatedInventoryProvider,
+  botInventoryRepository
+);
 
 program
   .name("ryusen")
@@ -183,6 +230,58 @@ bot
         isValid: status.isValid,
         expiresAt: status.expiresAt?.toISOString() ?? null,
         lastCheckedAt: status.lastCheckedAt?.toISOString() ?? null,
+      }))
+    );
+  });
+
+bot
+  .command("refresh-once")
+  .option("--app-id <appId>", "App ID", "440")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .action(async (options: BotRefreshOptions) => {
+    await runRefreshOnce(options);
+  });
+
+bot
+  .command("refresh-loop")
+  .option("--app-id <appId>", "App ID", "440")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .option("--interval-seconds <intervalSeconds>", "Refresh interval in seconds", "120")
+  .action(async (options: BotRefreshLoopOptions) => {
+    const intervalMs = Number(options.intervalSeconds) * 1000;
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+      throw new Error("--interval-seconds must be a positive number");
+    }
+
+    while (true) {
+      await runRefreshOnce(options);
+      await sleep(intervalMs);
+    }
+  });
+
+bot
+  .command("item-holders")
+  .requiredOption("--item-key <itemKey>", "Item key (currently classid_instanceid)")
+  .option("--app-id <appId>", "App ID", "440")
+  .option("--context-id <contextId>", "Context ID", "2")
+  .action(async (options: BotItemHoldersOptions) => {
+    const holders = await botInventoryRepository.listBotsByItemKey({
+      appId: Number(options.appId),
+      contextId: options.contextId,
+      itemKey: options.itemKey,
+    });
+
+    if (holders.length === 0) {
+      console.log("No bots hold this item.");
+      return;
+    }
+
+    console.table(
+      holders.map((holder) => ({
+        bot: holder.botName,
+        steamId: holder.steamId,
+        amount: holder.amount,
+        lastSeenAt: holder.lastSeenAt.toISOString(),
       }))
     );
   });

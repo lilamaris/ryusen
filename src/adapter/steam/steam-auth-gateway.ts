@@ -148,6 +148,7 @@ export class SteamSessionAuthGateway implements SteamAuthGateway {
 
     return {
       sessionToken: sessionId,
+      webCookies: cookies,
       expiresAt,
     };
   }

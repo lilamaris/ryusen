@@ -7,22 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model inventory_items {
-  id          BigInt   @id @default(autoincrement())
-  steam_id64  String
-  item_key    String
-  amount      Int      @default(1)
-  raw_payload Json
-  fetched_at  DateTime @default(now())
+model Item {
+  id             String       @id @default(cuid())
+  appId          Int
+  contextId      String
+  itemKey        String
+  name           String
+  marketHashName String
+  iconUrl        String?
+  holders        BotHasItem[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  @@unique([steam_id64, item_key])
-  @@index([steam_id64])
+  @@unique([appId, contextId, itemKey])
+  @@index([itemKey])
 }
 
-model steam_accounts {
-  user_id    String   @id
-  steam_id64 String   @unique
-  linked_at  DateTime @default(now())
+model BotHasItem {
+  id         String   @id @default(cuid())
+  botId      String
+  itemId     String
+  amount     Int
+  rawPayload Json
+  lastSeenAt DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bot        Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([botId, itemId])
+  @@index([itemId])
 }
 
 model Bot {
@@ -31,6 +45,7 @@ model Bot {
   steamId     String     @unique
   accountName String     @unique
   session     BotSession?
+  items       BotHasItem[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -39,6 +54,7 @@ model BotSession {
   id            String    @id @default(cuid())
   botId         String    @unique
   sessionToken  String
+  webCookies    String[]
   expiresAt     DateTime
   lastCheckedAt DateTime?
   createdAt     DateTime  @default(now())

@@ -8,6 +8,7 @@ export type Bot = {
 export type BotSession = {
   botId: string;
   sessionToken: string;
+  webCookies: string[];
   expiresAt: Date;
   lastCheckedAt: Date | null;
 };

@@ -15,16 +15,26 @@
   - Bot and bot-session domain types.
 - `src/core/port/bot-session-repository.ts`
   - Persistence port for bot/session lifecycle.
+- `src/core/port/bot-inventory-repository.ts`
+  - Persistence port for bot-to-item holdings snapshot and item-holder lookups.
 - `src/core/port/steam-auth-gateway.ts`
   - Auth gateway port for Steam credential + guard-code login.
+- `src/core/port/authenticated-inventory-provider.ts`
+  - Inventory provider port that uses authenticated web session cookies.
 - `src/core/usecase/bot-session-service.ts`
   - Use case for bot register, add+authenticate, re-authenticate, and session status checks.
+- `src/core/usecase/bot-inventory-refresh-service.ts`
+  - Use case for periodic bot inventory refresh and persistence.
 - `src/adapter/steam/steam-inventory-provider.ts`
   - `SteamInventoryProvider` implementation for Steam Web inventory API.
+- `src/adapter/steam/steam-authenticated-inventory-provider.ts`
+  - Authenticated Steam inventory fetch using persisted web cookies.
 - `src/adapter/steam/steam-auth-gateway.ts`
   - `SteamSessionAuthGateway` implementation using `steam-session`.
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma implementation of bot/session repository port.
+- `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
+  - Prisma implementation of bot inventory repository port.
 - `src/presentation/`
   - `cli.ts`: CLI table renderer.
   - `tui.ts`: terminal UI renderer.
@@ -46,7 +56,11 @@
   - Unique bot identity (`name`, `steamId`, `accountName`).
 - `BotSession`
   - One current session per bot (`botId` unique).
-  - Stores `sessionToken`, `expiresAt`, `lastCheckedAt`.
+  - Stores `sessionToken`, `webCookies`, `expiresAt`, `lastCheckedAt`.
+- `Item`
+  - Normalized item catalog per app/context and `itemKey` (`classid_instanceid`).
+- `BotHasItem`
+  - Per-bot inventory snapshot (`botId`, `itemId`, `amount`, `lastSeenAt`, `rawPayload`).
 
 ## Session Management Flow
 
@@ -59,6 +73,12 @@
 - `bot session-check`
   - Returns current validity of one bot or all bots using persisted session expiry metadata.
   - Batch check path uses one repository read for bots+sessions, then updates `lastCheckedAt` per existing session.
+- `bot refresh-once`
+  - Refreshes all managed bot inventories once (default `appId=440`, `contextId=2`) using authenticated cookies.
+- `bot refresh-loop`
+  - Runs periodic refresh (`--interval-seconds`, default 120).
+- `bot item-holders`
+  - Lists which bots currently hold a given `itemKey`.
 
 ## Update Policy
 

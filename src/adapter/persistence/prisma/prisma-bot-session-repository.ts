@@ -25,6 +25,7 @@ function toSession(record: PrismaBotSession): BotSession {
   return {
     botId: record.botId,
     sessionToken: record.sessionToken,
+    webCookies: record.webCookies,
     expiresAt: record.expiresAt,
     lastCheckedAt: record.lastCheckedAt,
   };
@@ -97,6 +98,7 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
   async upsertSession(input: {
     botId: string;
     sessionToken: string;
+    webCookies: string[];
     expiresAt: Date;
   }): Promise<BotSession> {
     const record = await this.prisma.botSession.upsert({
@@ -104,6 +106,7 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
       create: input,
       update: {
         sessionToken: input.sessionToken,
+        webCookies: input.webCookies,
         expiresAt: input.expiresAt,
       },
     });

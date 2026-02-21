@@ -41,6 +41,7 @@ export class BotSessionService {
     await this.repository.upsertSession({
       botId: bot.id,
       sessionToken: authResult.sessionToken,
+      webCookies: authResult.webCookies,
       expiresAt: authResult.expiresAt,
     });
   }
@@ -64,6 +65,7 @@ export class BotSessionService {
     await this.repository.upsertSession({
       botId: bot.id,
       sessionToken: authResult.sessionToken,
+      webCookies: authResult.webCookies,
       expiresAt: authResult.expiresAt,
     });
   }
