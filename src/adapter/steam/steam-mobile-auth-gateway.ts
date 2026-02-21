@@ -3,7 +3,6 @@ import {
   EAuthTokenPlatformType,
   LoginSession,
 } from "steam-session";
-import SteamCommunity = require("steamcommunity");
 import { debugLog } from "../../debug";
 import type { SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
 import type { SteamMobileAuthGateway, SteamTwoFactorBootstrapResult } from "../../core/port/steam-mobile-auth-gateway";
@@ -12,6 +11,25 @@ type StartSessionResponse = {
   actionRequired: boolean;
   validActions?: Array<{ type: EAuthSessionGuardType }>;
 };
+
+type SteamCommunityClient = {
+  steamID?: { getSteamID64(): string };
+  setMobileAppAccessToken(token: string): void;
+  enableTwoFactor(
+    callback: (
+      error: Error | null,
+      response?: {
+        shared_secret?: string;
+        identity_secret?: string;
+        revocation_code?: string;
+        phone_number_hint?: string;
+      }
+    ) => void
+  ): void;
+  finalizeTwoFactor(secret: string, activationCode: string, callback: (error: Error | null) => void): void;
+};
+
+const SteamCommunityConstructor = require("steamcommunity") as new () => SteamCommunityClient;
 
 function toError(error: unknown): Error {
   if (error instanceof Error) {
@@ -87,14 +105,14 @@ async function handleGuardActions(
   throw new Error("Steam login requires an unsupported guard action.");
 }
 
-function enableTwoFactor(community: SteamCommunity): Promise<{
+function enableTwoFactor(community: SteamCommunityClient): Promise<{
   sharedSecret: string;
   identitySecret: string;
   revocationCode: string;
   phoneNumberHint?: string;
 }> {
   return new Promise((resolve, reject) => {
-    community.enableTwoFactor((error, response) => {
+    community.enableTwoFactor((error: Error | null, response) => {
       if (error) {
         reject(error);
         return;
@@ -113,9 +131,13 @@ function enableTwoFactor(community: SteamCommunity): Promise<{
   });
 }
 
-function finalizeTwoFactor(community: SteamCommunity, sharedSecret: string, activationCode: string): Promise<void> {
+function finalizeTwoFactor(
+  community: SteamCommunityClient,
+  sharedSecret: string,
+  activationCode: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    community.finalizeTwoFactor(sharedSecret, activationCode, (error) => {
+    community.finalizeTwoFactor(sharedSecret, activationCode, (error: Error | null) => {
       if (error) {
         reject(error);
         return;
@@ -150,7 +172,7 @@ export class SteamMobileTwoFactorGateway implements SteamMobileAuthGateway {
       throw new Error("Steam mobile login succeeded but access token is missing.");
     }
 
-    const community = new SteamCommunity();
+    const community = new SteamCommunityConstructor();
     community.steamID = session.steamID;
     community.setMobileAppAccessToken(session.accessToken);
 

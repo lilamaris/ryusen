@@ -46,7 +46,7 @@ type BotBootstrapAuthenticatorOptions = {
 };
 
 type BotSyncOptions = {
-  fromYamlFile: string;
+  fromYamlFile?: string;
   secretsYamlFile?: string;
 };
 
@@ -148,10 +148,10 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
 
   bot
     .command("sync")
-    .requiredOption("--from-yaml-file <fileName>", "Bot account YAML file name in .ryusen/secret")
+    .option("--from-yaml-file <fileName>", "Bot account YAML file name in .ryusen/secret", "bots.yaml")
     .option("--secrets-yaml-file <fileName>", "Bot secret YAML file name in .ryusen/secret")
     .action(async (options: BotSyncOptions) => {
-      const accounts = await loadBotAccountDeclarationFromYaml(options.fromYamlFile);
+      const accounts = await loadBotAccountDeclarationFromYaml(options.fromYamlFile ?? "bots.yaml");
       const secretsBySteamId = options.secretsYamlFile
         ? await loadBotSecretsDeclarationFromYaml(options.secretsYamlFile)
         : undefined;
@@ -174,9 +174,9 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
 
   bot
     .command("sync-secrets")
-    .requiredOption("--from-yaml-file <fileName>", "Bot secret YAML file name in .ryusen/secret")
+    .option("--from-yaml-file <fileName>", "Bot secret YAML file name in .ryusen/secret", "secrets.yaml")
     .action(async (options: BotSyncOptions) => {
-      const secretsBySteamId = await loadBotSecretsDeclarationFromYaml(options.fromYamlFile);
+      const secretsBySteamId = await loadBotSecretsDeclarationFromYaml(options.fromYamlFile ?? "secrets.yaml");
       const result = await deps.botSessionService.syncBotSecretsFromDeclaration({
         secretsBySteamId,
       });
