@@ -51,7 +51,7 @@
 ## Session Management Flow
 
 - `bot add`
-  - Creates a bot record and immediately authenticates via Steam credentials.
+  - Authenticates via Steam credentials first, then creates/updates bot session state.
   - If Steam Guard is required, OTP or confirmation prompt is requested interactively.
 - `bot auth`
   - Re-authenticates existing bot using stored `accountName` and prompted password/OTP.

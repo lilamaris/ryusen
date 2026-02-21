@@ -97,6 +97,21 @@ If in doubt: update the doc.
 - If YES: update `docs/ARCHITECTURE.md` in the same change set.
 - Verification: does ARCHITECTURE still describe module boundaries + flows + contracts accurately?
 
+## 6. Add module usage docs when introducing new modules
+
+When adding a new module/subsystem (new directory, bounded-context file set, or major adapter/usecase group), add a usage document in `docs/module/<module-name>.md` in the same change set.
+
+The module document should include at least:
+
+- What problem the module solves
+- Related code paths (core/port/adapter/presentation)
+- Data contracts or persistence models used by the module
+- Main flow (request → processing → persistence/output)
+- How to run/use it from CLI or API
+- Troubleshooting notes for common failures
+
+If a module changes significantly later, update its module doc in the same commit/PR.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
