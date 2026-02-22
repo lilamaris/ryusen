@@ -132,6 +132,25 @@ When adding features or changing behavior, include tests in the same change set.
 - Do not merge behavior changes without executable regression coverage.
 - If a test is not feasible, document why and provide a concrete verification plan.
 
+## 8. Keep README.md in sync with shipped capabilities
+
+`README.md` is the user-facing entry document and must evolve with the project.
+
+Update `README.md` in the same change set when changes affect user-visible capability or operation, including:
+
+- New/removed CLI command groups or options
+- New/removed presentation paths (`view cli`, `view tui`, `view web`)
+- New module-level features that users can execute
+- Roadmap progress changes (TODO state moved from planned to shipped, or scope changed)
+- Setup/runtime prerequisite changes (env vars, database/bootstrap steps)
+
+Minimum README update checklist:
+
+- Current implemented features are still accurate
+- Command summary reflects actual CLI behavior
+- Roadmap TODO list reflects current stage
+- Links to architecture/module docs are still valid
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
