@@ -2,6 +2,8 @@ import type { Command } from "commander";
 import type { PrismaBotInventoryRepository } from "../../adapter/prisma/inventory/inventory-repository";
 import { getBotTradeAutomationMode, getBotTradeReadiness } from "../../core/session/type/session";
 import type { ClusterStockService } from "../../core/inventory/usecase/stock";
+import type { MarketPriceCurrencies } from "../../core/pricing/type/price";
+import type { MarketPriceService } from "../../core/pricing/usecase/price";
 import type { BotSessionService } from "../../core/session/usecase/session";
 
 type SessionListOptions = {
@@ -20,11 +22,35 @@ type StockOptions = {
   sku: string;
 };
 
+type PriceOptions = {
+  name: string;
+  appId: string;
+  contextId: string;
+  sku: string;
+  source: string;
+  maxAgeSeconds: string;
+};
+
 type RegisterLsCommandDeps = {
   botSessionService: BotSessionService;
   botInventoryRepository: PrismaBotInventoryRepository;
   clusterStockService: ClusterStockService;
+  marketPriceService: MarketPriceService;
 };
+
+function formatCurrencies(currencies: MarketPriceCurrencies): string {
+  const parts: string[] = [];
+  if (currencies.keys !== undefined) {
+    parts.push(`${currencies.keys} keys`);
+  }
+  if (currencies.metal !== undefined) {
+    parts.push(`${currencies.metal} ref`);
+  }
+  if (currencies.usd !== undefined) {
+    parts.push(`$${currencies.usd}`);
+  }
+  return parts.length > 0 ? parts.join(" + ") : "-";
+}
 
 export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): void {
   ls.command("bots").action(async () => {
@@ -125,6 +151,40 @@ export function registerLsCommands(ls: Command, deps: RegisterLsCommandDeps): vo
           lastSeenAt: holder.lastSeenAt.toISOString(),
         }))
       );
+    });
+
+  ls
+    .command("price")
+    .requiredOption("--name <name>", "Bot name to select source access token")
+    .requiredOption("--sku <sku>", "Market SKU to query from the selected source")
+    .option("--source <source>", "Price source identifier", "backpack.tf")
+    .option("--app-id <appId>", "App ID", "440")
+    .option("--context-id <contextId>", "Context ID", "2")
+    .option("--max-age-seconds <maxAgeSeconds>", "Use cache when newer than this age (seconds)", "120")
+    .action(async (options: PriceOptions) => {
+      const accessToken = await deps.botSessionService.getBackpackAccessToken(options.name);
+      const quote = await deps.marketPriceService.getPrice({
+        source: options.source,
+        appId: Number(options.appId),
+        contextId: options.contextId,
+        sku: options.sku,
+        accessToken,
+        maxAgeSeconds: Number(options.maxAgeSeconds),
+      });
+
+      console.table([
+        {
+          source: quote.source,
+          appId: quote.appId,
+          contextId: quote.contextId,
+          sku: quote.sku,
+          bestBuy: quote.bestBuy ? formatCurrencies(quote.bestBuy.currencies) : null,
+          bestSell: quote.bestSell ? formatCurrencies(quote.bestSell.currencies) : null,
+          buyListings: quote.bestBuy?.listingCount ?? 0,
+          sellListings: quote.bestSell?.listingCount ?? 0,
+          fetchedAt: quote.fetchedAt.toISOString(),
+        },
+      ]);
     });
 
   ls

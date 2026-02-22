@@ -201,6 +201,134 @@ void test("setTradeToken updates existing bot token", async () => {
   assert.deepEqual(repository.updated, [{ botName: "alpha", tradeToken: "token-1" }]);
 });
 
+void test("setBackpackAccessToken stores token for existing bot", async () => {
+  class SetBackpackTokenRepository implements BotSessionRepository {
+    public updated: Array<{ botName: string; accessToken: string }> = [];
+
+    createBot(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    findBotByName(name: string): Promise<Bot | null> {
+      return Promise.resolve({
+        id: "bot-a",
+        name,
+        steamId: "1",
+        accountName: "alpha",
+        tradeToken: null,
+      });
+    }
+
+    findBotBySteamId(): Promise<Bot | null> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    updateBotIdentity(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    listBots(): Promise<Bot[]> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    upsertSession(): Promise<BotSession> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    findSessionByBotId(): Promise<BotSession | null> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    markSessionChecked(): Promise<void> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    setBotTradeToken(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    setBotBackpackAccessToken(
+      botName: string,
+      accessToken: string
+    ): Promise<{ botId: string; botName: string; updatedAt: Date }> {
+      this.updated.push({ botName, accessToken });
+      return Promise.resolve({
+        botId: "bot-a",
+        botName,
+        updatedAt: new Date("2026-02-22T13:00:00.000Z"),
+      });
+    }
+
+    findBotBackpackAccessToken(): Promise<string | null> {
+      return Promise.resolve("bp-token");
+    }
+
+    setBotTradeSecretsBySteamId(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+  }
+
+  const repository = new SetBackpackTokenRepository();
+  const service = new BotSessionService(repository, new FakeAuthGateway());
+  await service.setBackpackAccessToken({ botName: "alpha", accessToken: "bp-token-1" });
+  assert.deepEqual(repository.updated, [{ botName: "alpha", accessToken: "bp-token-1" }]);
+});
+
+void test("getBackpackAccessToken fails when token is missing", async () => {
+  class MissingBackpackTokenRepository implements BotSessionRepository {
+    createBot(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    findBotByName(): Promise<Bot | null> {
+      return Promise.resolve(null);
+    }
+    findBotBySteamId(): Promise<Bot | null> {
+      return Promise.resolve(null);
+    }
+    updateBotIdentity(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    listBots(): Promise<Bot[]> {
+      return Promise.resolve([]);
+    }
+    listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+      return Promise.resolve([]);
+    }
+    upsertSession(): Promise<BotSession> {
+      return Promise.reject(new Error("not used"));
+    }
+    findSessionByBotId(): Promise<BotSession | null> {
+      return Promise.resolve(null);
+    }
+    markSessionChecked(): Promise<void> {
+      return Promise.resolve();
+    }
+    setBotTradeToken(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    findBotBackpackAccessToken(): Promise<string | null> {
+      return Promise.resolve(null);
+    }
+    setBotTradeSecretsBySteamId(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+  }
+
+  const service = new BotSessionService(new MissingBackpackTokenRepository(), new FakeAuthGateway());
+  await assert.rejects(() => service.getBackpackAccessToken("alpha"), /Backpack access token not configured/);
+});
+
 void test("syncBotsFromDeclaration creates bots, applies secrets, and updates sessions", async () => {
   type RepoBot = Bot & { sharedSecret: string | null; identitySecret: string | null };
 

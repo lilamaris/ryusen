@@ -16,6 +16,11 @@ export interface BotSessionRepository {
   findSessionByBotId(botId: string): Promise<BotSession | null>;
   markSessionChecked(botId: string, checkedAt: Date): Promise<void>;
   setBotTradeToken(botName: string, tradeToken: string): Promise<Bot>;
+  setBotBackpackAccessToken?(
+    botName: string,
+    accessToken: string
+  ): Promise<{ botId: string; botName: string; updatedAt: Date }>;
+  findBotBackpackAccessToken?(botName: string): Promise<string | null>;
   setBotTradeSecretsBySteamId(
     steamId: string,
     secrets: {

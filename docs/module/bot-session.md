@@ -6,6 +6,7 @@
 - Keep one current session per bot and expose session validity for operations that depend on authenticated cookies.
 - Manage declarative bot/session sync from YAML files.
 - Manage 2FA authenticator bootstrap state (`enableTwoFactor`) and trade lock window.
+- Manage per-bot backpack.tf integration credentials (access token).
 - Scope boundary:
   - In scope: bot create/connect/reauth/sync, session validity checks, OTP/manual confirmation prompts, bot secret sync, authenticator bootstrap and onboarding lock state transition.
   - Out of scope: inventory fetch/storage logic, consolidation planning logic.
@@ -27,7 +28,7 @@
 - `src/adapter/steam/session/mobile-auth-gateway.ts`
   - Mobile-app auth + `enableTwoFactor/finalizeTwoFactor` orchestration.
 - `src/presentation/command/bot.ts`
-  - `bot create/connect/reauth/sync/sync-secrets/bootstrap-authenticator` command wiring.
+  - `bot create/connect/reauth/sync/sync-secrets/bootstrap-authenticator/set-backpack-token` command wiring.
 - `src/presentation/command/bot-sync-yaml.ts`
   - YAML declaration parsing for accounts/secrets.
 - `src/presentation/command/ls.ts`
@@ -47,6 +48,7 @@
 - Persistence models:
   - `Bot` (`name`, `steamId`, `accountName`, `sharedSecret`, `identitySecret`, `revocationCode`, `onboardingState`, `onboardingStartedAt`, `tradeLockedUntil`)
   - `BotSession` (`botId`, `sessionToken`, `webCookies`, `expiresAt`, `lastCheckedAt`)
+  - `BotBackpackIntegration` (`botId`, `accessToken`, `lastRateLimitedAt`)
 
 ## Main Flows
 
@@ -103,6 +105,13 @@
 3. Operator enters activation code (SMS/email) and gateway finalizes via `finalizeTwoFactor`.
 4. Service stores `sharedSecret`/`identitySecret`/`revocationCode`, marks bot `ONBOARDING_LOCKED`, and sets `tradeLockedUntil = onboardingStartedAt + 15 days`.
 5. After lock expiry, listing/session checks auto-transition the bot state to `AUTO_READY`.
+
+### Flow: `bot set-backpack-token`
+
+1. CLI receives bot name and backpack.tf access token.
+2. `BotSessionService.setBackpackAccessToken` validates non-empty token.
+3. Repository upserts `BotBackpackIntegration` row by bot identity.
+4. Later pricing/listing modules resolve token by bot name for backpack API calls.
 
 ## CLI Usage
 
@@ -171,6 +180,12 @@ npm run dev -- bot sync-secrets --from-yaml-file <secrets.yaml>
 
 ```bash
 npm run dev -- bot bootstrap-authenticator --name <bot-name>
+```
+
+### Set backpack.tf access token
+
+```bash
+npm run dev -- bot set-backpack-token --name <bot-name> --token <backpack-access-token>
 ```
 
 ### List session status

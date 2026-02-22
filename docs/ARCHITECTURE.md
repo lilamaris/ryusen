@@ -11,7 +11,7 @@ Detailed behavior, flow, and CLI usage live in module docs.
 
 - Bot identity/session/authentication
   - Module doc: `docs/module/bot-session.md`
-  - Main commands: `bot create`, `bot connect`, `bot reauth`, `bot sync`, `bot sync-secrets`, `bot bootstrap-authenticator`, `ls sessions`, `ls bots`
+  - Main commands: `bot create`, `bot connect`, `bot reauth`, `bot sync`, `bot sync-secrets`, `bot bootstrap-authenticator`, `bot set-backpack-token`, `ls sessions`, `ls bots`
 - Inventory refresh and holdings persistence
   - Module doc: `docs/module/inventory-refresh.md`
   - Main commands: `bot refresh`, `bot watch`, `ls items`, `ls stock`
@@ -21,13 +21,16 @@ Detailed behavior, flow, and CLI usage live in module docs.
 - Bot-to-bot trade offers
   - Module doc: `docs/module/bot-trade.md`
   - Main commands: `bot trade`, `bot set-trade-token`
+- External market pricing
+  - Module doc: `docs/module/pricing.md`
+  - Main commands: `ls price`
 
 If your task spans multiple features, read all relevant module docs.
 
 ## System Boundaries
 
-- `core`: feature-first modules (`session`, `inventory`, `trade`) with `type/`, `interface/`, `usecase/`
-- `adapter`: infra-first modules (`steam`, `prisma`); each infra groups implementations by feature (`session`, `inventory`, `trade`)
+- `core`: feature-first modules (`session`, `inventory`, `trade`, `pricing`) with `type/`, `interface/`, `usecase/`
+- `adapter`: infra-first modules (`steam`, `prisma`, `backpack`); each infra groups implementations by feature (`session`, `inventory`, `trade`, `pricing`)
 - `presentation`: CLI/TUI/Web command and rendering
 - `app/bootstrap.ts`: dependency wiring
 - `index.ts`: entrypoint and process lifecycle

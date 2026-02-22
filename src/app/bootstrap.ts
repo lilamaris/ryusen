@@ -1,14 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaBotInventoryRepository } from "../adapter/prisma/inventory/inventory-repository";
+import { PrismaPriceCacheRepository } from "../adapter/prisma/pricing/price-cache-repository";
 import { PrismaBotSessionRepository } from "../adapter/prisma/session/session-repository";
 import { SteamSessionAuthGateway } from "../adapter/steam/session/auth-gateway";
 import { SteamMobileTwoFactorGateway } from "../adapter/steam/session/mobile-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "../adapter/steam/inventory/authenticated-inventory-provider";
 import { SteamTradeOfferGateway } from "../adapter/steam/trade/trade-offer-gateway";
+import { BackpackTfPricer } from "../adapter/backpack/pricing/backpack-pricer";
 import { ClusterStockService } from "../core/inventory/usecase/stock";
 import { BotInventoryQueryService } from "../core/inventory/usecase/query";
 import { BotInventoryRefreshService } from "../core/inventory/usecase/refresh";
 import { BotInventoryViewService } from "../core/inventory/usecase/view";
+import { MarketPriceService } from "../core/pricing/usecase/price";
 import type { DebugLogger } from "../core/shared/type/debug-logger";
 import { BotSessionService } from "../core/session/usecase/session";
 import { BotTradeService } from "../core/trade/usecase/trade";
@@ -24,6 +27,7 @@ export type AppContext = {
   botInventoryViewService: BotInventoryViewService;
   clusterStockService: ClusterStockService;
   botTradeService: BotTradeService;
+  marketPriceService: MarketPriceService;
 };
 
 export function createAppContext(debugLogger: DebugLogger): AppContext {
@@ -33,6 +37,7 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
   const steamMobileAuthGateway = new SteamMobileTwoFactorGateway();
   const botSessionRepository = new PrismaBotSessionRepository(prisma);
   const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
+  const priceCacheRepository = new PrismaPriceCacheRepository(prisma);
   const botSessionService = new BotSessionService(
     botSessionRepository,
     steamAuthGateway,
@@ -59,6 +64,8 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
     steamTradeOfferGateway,
     debugLogger
   );
+  const backpackTfPricer = new BackpackTfPricer();
+  const marketPriceService = new MarketPriceService([backpackTfPricer], priceCacheRepository, debugLogger);
 
   return {
     prisma,
@@ -71,5 +78,6 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
     botInventoryViewService,
     clusterStockService,
     botTradeService,
+    marketPriceService,
   };
 }

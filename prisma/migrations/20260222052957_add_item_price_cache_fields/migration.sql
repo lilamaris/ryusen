@@ -1,0 +1,3 @@
+-- Intentionally left as no-op.
+-- This migration was created during early manual pricing-cache iteration.
+-- Keep the file to preserve migration ordering/history consistency.

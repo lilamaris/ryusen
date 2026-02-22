@@ -18,6 +18,7 @@
 - YAML 기반 다중 봇 일괄 동기화 (`bot sync`)
 - YAML 기반 secret 동기화 (`bot sync-secrets`)
 - Authenticator bootstrap 및 onboarding lock 상태 관리
+- bot별 backpack.tf access token 저장 (`bot set-backpack-token`)
 - 세션/봇 상태 조회 (`ls bots`, `ls sessions`)
 
 관련 문서: `docs/module/bot-session.md`
@@ -48,6 +49,16 @@
 
 관련 문서: `docs/module/bot-trade.md`
 
+### 5) External Market Pricing
+
+- 소스별 pricer 인터페이스 기반 가격 조회
+- backpack.tf 소스 구현체 제공
+- SKU 기준 현재 최우선 매수/매도 호가 조회 (`ls price`)
+- 가격 조회 시 bot별 backpack.tf access token 사용
+- `Item` 기반 가격 캐시 + 신선도 정책(TTL) 적용
+
+관련 문서: `docs/module/pricing.md`
+
 ## 표현 계층 (WebUI / CLI / TUI)
 
 - CLI: 운영 명령 실행 및 테이블 출력
@@ -68,6 +79,7 @@ npm run dev -- <command>
 - `bot connect --name --steam-id --account-name`
 - `bot reauth --name`
 - `bot set-trade-token --name --token`
+- `bot set-backpack-token --name --token`
 - `bot bootstrap-authenticator --name`
 - `bot sync [--from-yaml-file bots.yaml] [--secrets-yaml-file secrets.yaml]`
 - `bot sync-secrets [--from-yaml-file secrets.yaml]`
@@ -81,6 +93,7 @@ npm run dev -- <command>
 - `ls sessions [--name <bot>]`
 - `ls items --sku <sku> [--app-id 440] [--context-id 2]`
 - `ls stock --sku <sku> [--app-id 440] [--context-id 2]`
+- `ls price --name <bot> --sku <sku> [--source backpack.tf] [--app-id 440] [--context-id 2] [--max-age-seconds 120]`
 
 ### `view` 그룹
 
@@ -111,6 +124,10 @@ npm run prisma:generate
 npm run prisma:migrate
 ```
 
+- 새 스키마 변경으로 마이그레이션 파일을 **생성**할 때: `npm run prisma:migrate -- --name <migration-name>`
+- 이미 저장소에 있는 마이그레이션을 DB에 **적용만** 할 때: `npm run prisma:deploy`
+- 마이그레이션 이력/의도: `prisma/migrations/README.md`
+
 ### 4) 기본 실행 예시
 
 ```bash
@@ -125,7 +142,7 @@ npm run dev -- view web --port 3000
 - [x] 인벤토리 refresh 및 SKU별 재고 조회
 - [x] CLI/TUI/Web 조회 경로
 - [x] 봇 간 trade offer 생성(수동 승인)
-- [ ] item price provider 연동
+- [x] item price provider 연동
 - [ ] 가격 기반 자동 Listing 생성
 - [ ] incoming trade 자동 승낙/거절 판단 엔진
 - [ ] 거래/리스팅 오케스트레이션 및 작업 추적

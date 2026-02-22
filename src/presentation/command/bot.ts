@@ -41,6 +41,11 @@ type BotTradeTokenOptions = {
   token: string;
 };
 
+type BotBackpackTokenOptions = {
+  name: string;
+  token: string;
+};
+
 type BotBootstrapAuthenticatorOptions = {
   name: string;
 };
@@ -120,6 +125,18 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
         tradeToken: options.token,
       });
       console.log(`Bot trade token updated: ${options.name}`);
+    });
+
+  bot
+    .command("set-backpack-token")
+    .requiredOption("--name <name>", "Bot name")
+    .requiredOption("--token <token>", "backpack.tf access token")
+    .action(async (options: BotBackpackTokenOptions) => {
+      await deps.botSessionService.setBackpackAccessToken({
+        botName: options.name,
+        accessToken: options.token,
+      });
+      console.log(`Bot backpack token updated: ${options.name}`);
     });
 
   bot

@@ -71,6 +71,7 @@ const {
   botInventoryViewService,
   clusterStockService,
   botTradeService,
+  marketPriceService,
 } = createAppContext(debugLogger);
 
 program
@@ -104,6 +105,7 @@ registerLsCommands(ls, {
   botSessionService,
   botInventoryRepository,
   clusterStockService,
+  marketPriceService,
 });
 
 registerViewCommands(view, {

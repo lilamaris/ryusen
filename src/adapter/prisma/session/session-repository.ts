@@ -267,6 +267,57 @@ export class PrismaBotSessionRepository implements BotSessionRepository {
     return toBot(record);
   }
 
+  async setBotBackpackAccessToken(
+    botName: string,
+    accessToken: string
+  ): Promise<{ botId: string; botName: string; updatedAt: Date }> {
+    debugLog("PrismaBotSessionRepository", "setBotBackpackAccessToken:start", { botName });
+    const bot = await this.prisma.bot.findUnique({
+      where: { name: botName },
+      select: { id: true, name: true },
+    });
+    if (!bot) {
+      throw new Error(`Bot not found: ${botName}`);
+    }
+
+    const updated = await this.prisma.botBackpackIntegration.upsert({
+      where: { botId: bot.id },
+      create: {
+        botId: bot.id,
+        accessToken,
+      },
+      update: {
+        accessToken,
+      },
+      select: {
+        updatedAt: true,
+      },
+    });
+
+    debugLog("PrismaBotSessionRepository", "setBotBackpackAccessToken:done", { botName });
+    return {
+      botId: bot.id,
+      botName: bot.name,
+      updatedAt: updated.updatedAt,
+    };
+  }
+
+  async findBotBackpackAccessToken(botName: string): Promise<string | null> {
+    debugLog("PrismaBotSessionRepository", "findBotBackpackAccessToken", { botName });
+    const row = await this.prisma.bot.findUnique({
+      where: { name: botName },
+      select: {
+        backpackIntegration: {
+          select: {
+            accessToken: true,
+          },
+        },
+      },
+    });
+
+    return row?.backpackIntegration?.accessToken ?? null;
+  }
+
   async setBotTradeSecretsBySteamId(
     steamId: string,
     secrets: {

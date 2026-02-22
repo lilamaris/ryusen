@@ -163,6 +163,33 @@ export class BotSessionService {
     this.debug("setTradeToken:done", { botName: input.botName });
   }
 
+  async setBackpackAccessToken(input: { botName: string; accessToken: string }): Promise<void> {
+    const accessToken = input.accessToken.trim();
+    if (!accessToken) {
+      throw new Error("accessToken must not be empty");
+    }
+    if (!this.repository.setBotBackpackAccessToken) {
+      throw new Error("backpack integration storage is not configured");
+    }
+
+    this.debug("setBackpackAccessToken:start", { botName: input.botName });
+    await this.repository.setBotBackpackAccessToken(input.botName, accessToken);
+    this.debug("setBackpackAccessToken:done", { botName: input.botName });
+  }
+
+  async getBackpackAccessToken(botName: string): Promise<string> {
+    if (!this.repository.findBotBackpackAccessToken) {
+      throw new Error("backpack integration storage is not configured");
+    }
+
+    const token = await this.repository.findBotBackpackAccessToken(botName);
+    if (!token) {
+      throw new Error(`Backpack access token not configured for bot: ${botName}`);
+    }
+
+    return token;
+  }
+
   async bootstrapTradeAuthenticator(input: {
     botName: string;
     password: string;
