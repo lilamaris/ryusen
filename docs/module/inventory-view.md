@@ -10,11 +10,11 @@
 
 ## Owning Code Paths
 
-- `src/core/usecase/bot-inventory-query-service.ts`
+- `src/core/inventory/usecase/query.ts`
   - Target resolution from bot/session state and fallback policy.
-- `src/core/usecase/bot-inventory-view-service.ts`
+- `src/core/inventory/usecase/view.ts`
   - Fetches resolved targets and aggregates skipped/failures.
-- `src/core/provider/inventory-provider.ts`
+- `src/core/inventory/interface/inventory-provider.ts`
   - Shared inventory provider contract.
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Concrete provider used by view flows.

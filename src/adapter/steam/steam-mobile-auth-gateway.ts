@@ -4,8 +4,8 @@ import {
   LoginSession,
 } from "steam-session";
 import { debugLog } from "../../debug";
-import type { SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
-import type { SteamMobileAuthGateway, SteamTwoFactorBootstrapResult } from "../../core/port/steam-mobile-auth-gateway";
+import type { SteamMobileAuthGateway } from "../../core/session/interface/mobile-auth-gateway";
+import type { SteamGuardPrompts, SteamTwoFactorBootstrapResult } from "../../core/session/type/auth";
 
 type StartSessionResponse = {
   actionRequired: boolean;

@@ -1,8 +1,8 @@
 import type { Command } from "commander";
 import type { PrismaBotInventoryRepository } from "../../adapter/persistence/prisma/prisma-bot-inventory-repository";
-import { getBotTradeAutomationMode, getBotTradeReadiness } from "../../core/bot/bot-session";
-import type { ClusterStockService } from "../../core/usecase/cluster-stock-service";
-import type { BotSessionService } from "../../core/usecase/bot-session-service";
+import { getBotTradeAutomationMode, getBotTradeReadiness } from "../../core/session/type/session";
+import type { ClusterStockService } from "../../core/inventory/usecase/stock";
+import type { BotSessionService } from "../../core/session/usecase/session";
 
 type SessionListOptions = {
   name?: string;

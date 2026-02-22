@@ -1,24 +1,13 @@
-import type { Bot, BotSession } from "../bot/bot-session";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { InventoryQuery } from "../provider/inventory-provider";
-import type { DebugLogger } from "./debug-logger";
-
-export type InventorySkipReason = "bot_not_found" | "no_session" | "expired_session" | "missing_web_cookies";
-
-export type InventoryQueryTarget = {
-  botName: string;
-  query: InventoryQuery;
-};
-
-export type SkippedBot = {
-  botName: string;
-  reason: InventorySkipReason;
-};
-
-export type ResolveInventoryTargetsResult = {
-  targets: InventoryQueryTarget[];
-  skipped: SkippedBot[];
-};
+import type { Bot, BotSession } from "../../session/type/session";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
+import type { InventoryQuery } from "../type/inventory";
+import type {
+  InventoryQueryTarget,
+  InventorySkipReason,
+  ResolveInventoryTargetsResult,
+  SkippedBot,
+} from "../type/usecase";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 function buildTarget(
   bot: Bot,

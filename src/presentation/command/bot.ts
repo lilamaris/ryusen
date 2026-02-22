@@ -1,7 +1,7 @@
 import type { Command } from "commander";
-import type { BotTradeService } from "../../core/usecase/bot-trade-service";
-import type { BotSessionService } from "../../core/usecase/bot-session-service";
-import type { SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
+import type { BotTradeService } from "../../core/trade/usecase/trade";
+import type { BotSessionService } from "../../core/session/usecase/session";
+import type { SteamGuardPrompts } from "../../core/session/type/auth";
 import { loadBotAccountDeclarationFromYaml, loadBotSecretsDeclarationFromYaml } from "./bot-sync-yaml";
 
 type BotRegisterOptions = {

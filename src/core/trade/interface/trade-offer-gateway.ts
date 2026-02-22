@@ -1,9 +1,4 @@
-export type TradeOfferAsset = {
-  assetId: string;
-  appId: number;
-  contextId: string;
-  amount: number;
-};
+import type { TradeOfferAsset } from "../type/trade";
 
 export interface BotTradeOfferGateway {
   createTradeOffer(input: {

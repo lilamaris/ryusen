@@ -1,4 +1,4 @@
-import type { InventoryQuery } from "../../core/provider/inventory-provider";
+import type { InventoryQuery } from "../../core/inventory/type/inventory";
 
 export function getSingleQueryValue(value: unknown, fallback: string): string {
   if (typeof value === "string") {

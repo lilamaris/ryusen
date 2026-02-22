@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BotInventoryRefreshService } from "./bot-inventory-refresh-service";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { Bot, BotSession } from "../bot/bot-session";
-import type { BotInventoryRepository, BotInventoryWriteItem } from "../port/bot-inventory-repository";
-import type { InventoryItem, InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
+import { BotInventoryRefreshService } from "./refresh";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
+import type { Bot, BotSession } from "../../session/type/session";
+import type { BotInventoryRepository } from "../interface/inventory-repository";
+import type { BotInventoryWriteItem } from "../type/holding";
+import type { InventoryProvider } from "../interface/inventory-provider";
+import type { InventoryItem, InventoryQuery } from "../type/inventory";
 
 class FakeSessionRepository implements BotSessionRepository {
   constructor(private readonly rows: Array<{ bot: Bot; session: BotSession | null }>) {}

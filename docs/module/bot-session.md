@@ -12,13 +12,13 @@
 
 ## Owning Code Paths
 
-- `src/core/bot/bot-session.ts`
+- `src/core/session/type/session.ts`
   - `Bot`, `BotSession`, `BotSessionStatus` domain types.
-- `src/core/port/bot-session-repository.ts`
+- `src/core/session/interface/session-repository.ts`
   - Bot/session persistence port.
-- `src/core/port/steam-auth-gateway.ts`
+- `src/core/session/interface/auth-gateway.ts`
   - Steam credential/guard auth port.
-- `src/core/usecase/bot-session-service.ts`
+- `src/core/session/usecase/session.ts`
   - Main session/secret sync use case orchestration.
 - `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
   - Prisma implementation for bot/session persistence.

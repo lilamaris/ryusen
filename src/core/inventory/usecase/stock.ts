@@ -1,19 +1,6 @@
-import type { BotInventoryRepository } from "../port/bot-inventory-repository";
-import type { DebugLogger } from "./debug-logger";
-
-export type ClusterStockResult = {
-  appId: number;
-  contextId: string;
-  sku: string;
-  totalAmount: number;
-  holders: Array<{
-    botId: string;
-    botName: string;
-    steamId: string;
-    amount: number;
-    lastSeenAt: Date;
-  }>;
-};
+import type { BotInventoryRepository } from "../interface/inventory-repository";
+import type { ClusterStockResult } from "../type/usecase";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 export class ClusterStockService {
   constructor(

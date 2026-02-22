@@ -4,7 +4,8 @@ import {
   LoginSession,
 } from "steam-session";
 import { debugLog } from "../../debug";
-import type { SteamAuthGateway, SteamAuthResult, SteamGuardPrompts } from "../../core/port/steam-auth-gateway";
+import type { SteamAuthGateway } from "../../core/session/interface/auth-gateway";
+import type { SteamAuthResult, SteamGuardPrompts } from "../../core/session/type/auth";
 
 type StartSessionResponse = {
   actionRequired: boolean;

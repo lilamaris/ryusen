@@ -27,7 +27,3 @@ export type InventoryQuery = {
   contextId: string;
   webCookies?: string[];
 };
-
-export interface InventoryProvider<TQuery> {
-  listItems(query: TQuery): Promise<InventoryItem[]>;
-}

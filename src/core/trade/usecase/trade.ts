@@ -1,17 +1,10 @@
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { BotTradeOfferGateway, TradeOfferAsset } from "../port/bot-trade-offer-gateway";
-import type { InventoryProvider, InventoryQuery, InventoryItem } from "../provider/inventory-provider";
-import type { DebugLogger } from "./debug-logger";
-import { getBotTradeReadiness } from "../bot/bot-session";
-
-export type BotTradeOfferResult = {
-  tradeOfferId: string;
-  offerUrl: string;
-  fromBotName: string;
-  toBotName: string;
-  sku: string;
-  requestedAmount: number;
-};
+import type { BotTradeOfferGateway } from "../interface/trade-offer-gateway";
+import type { TradeOfferAsset, BotTradeOfferResult } from "../type/trade";
+import type { InventoryProvider } from "../../inventory/interface/inventory-provider";
+import type { InventoryItem, InventoryQuery } from "../../inventory/type/inventory";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
+import { getBotTradeReadiness } from "../../session/type/session";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 export class BotTradeService {
   constructor(

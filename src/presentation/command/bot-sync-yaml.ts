@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parse } from "yaml";
-import type { BotDeclarationAccount, BotTradeSecretsDeclaration } from "../../core/usecase/bot-session-service";
+import type { BotDeclarationAccount, BotTradeSecretsDeclaration } from "../../core/session/type/usecase";
 
 const SECRET_BASE_DIR = path.resolve(process.cwd(), ".ryusen/secret");
 

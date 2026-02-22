@@ -9,10 +9,8 @@ export type SteamGuardPrompts = {
   notifyPendingConfirmation(message: string): Promise<void>;
 };
 
-export interface SteamAuthGateway {
-  authenticateWithCredentials(input: {
-    accountName: string;
-    password: string;
-    prompts: SteamGuardPrompts;
-  }): Promise<SteamAuthResult>;
-}
+export type SteamTwoFactorBootstrapResult = {
+  sharedSecret: string;
+  identitySecret: string;
+  revocationCode: string;
+};

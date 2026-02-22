@@ -1,52 +1,16 @@
-import { getBotTradeReadiness, type Bot, type BotOnboardingState, type BotSessionStatus } from "../bot/bot-session";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { SteamAuthGateway, SteamGuardPrompts } from "../port/steam-auth-gateway";
-import type { SteamMobileAuthGateway } from "../port/steam-mobile-auth-gateway";
-import type { DebugLogger } from "./debug-logger";
-
-export type BotDeclarationAccount = {
-  alias: string;
-  steamId: string;
-  account: string;
-  password: string;
-};
-
-export type BotTradeSecretsDeclaration = {
-  sharedSecret?: string;
-  identitySecret?: string;
-};
-
-export type BotSyncResult = {
-  total: number;
-  succeeded: number;
-  failed: number;
-  rows: Array<{
-    alias: string;
-    steamId: string;
-    status: "ok" | "error";
-    message: string;
-  }>;
-};
-
-export type BotSecretSyncResult = {
-  total: number;
-  updated: number;
-  failed: number;
-  rows: Array<{
-    steamId: string;
-    status: "updated" | "error";
-    message: string;
-  }>;
-};
-
-export type BotAuthenticatorBootstrapResult = {
-  botName: string;
-  steamId: string;
-  onboardingState: BotOnboardingState;
-  tradable: boolean;
-  tradeLockedUntil: Date;
-  revocationCode: string;
-};
+import { getBotTradeReadiness, type Bot, type BotOnboardingState, type BotSessionStatus } from "../type/session";
+import type { BotSessionRepository } from "../interface/session-repository";
+import type { SteamAuthGateway } from "../interface/auth-gateway";
+import type { SteamMobileAuthGateway } from "../interface/mobile-auth-gateway";
+import type { SteamGuardPrompts } from "../type/auth";
+import type {
+  BotAuthenticatorBootstrapResult,
+  BotDeclarationAccount,
+  BotSecretSyncResult,
+  BotSyncResult,
+  BotTradeSecretsDeclaration,
+} from "../type/usecase";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 export class BotSessionService {
   constructor(

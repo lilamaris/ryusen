@@ -1,26 +1,14 @@
-import type { InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
+import type { InventoryProvider } from "../interface/inventory-provider";
 import type {
-  BotInventoryQueryService,
+  BotInventoryQueryService
+} from "./query";
+import type { InventoryQuery } from "../type/inventory";
+import type {
+  BotInventoryViewResult,
   InventorySkipReason,
   ResolveInventoryTargetsResult,
-} from "./bot-inventory-query-service";
-import type { DebugLogger } from "./debug-logger";
-
-export type BotInventoryViewItem = {
-  name: string;
-  marketHashName: string;
-  quantity: number;
-  sku: string;
-};
-
-export type BotInventoryViewResult = {
-  inventories: Array<{
-    botName: string;
-    items: BotInventoryViewItem[];
-  }>;
-  skipped: Array<{ botName: string; reason: InventorySkipReason }>;
-  failures: Array<{ botName: string; reason: string }>;
-};
+} from "../type/usecase";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 type ResolveInput = {
   botName?: string;

@@ -1,5 +1,6 @@
 import type { Express } from "express";
-import type { InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
+import type { InventoryProvider } from "../../core/inventory/interface/inventory-provider";
+import type { InventoryQuery } from "../../core/inventory/type/inventory";
 import { debugLog } from "../../debug";
 import { getSingleQueryValue, parseQuery } from "./query";
 import { pageTemplate } from "./template";

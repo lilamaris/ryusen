@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Bot, BotSession } from "../bot/bot-session";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { InventoryProvider, InventoryQuery, InventoryItem } from "../provider/inventory-provider";
-import type { BotTradeOfferGateway, TradeOfferAsset } from "../port/bot-trade-offer-gateway";
-import { BotTradeService } from "./bot-trade-service";
+import type { Bot, BotSession } from "../../session/type/session";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
+import type { InventoryProvider } from "../../inventory/interface/inventory-provider";
+import type { InventoryQuery, InventoryItem } from "../../inventory/type/inventory";
+import type { BotTradeOfferGateway } from "../interface/trade-offer-gateway";
+import type { TradeOfferAsset } from "../type/trade";
+import { BotTradeService } from "./trade";
 
 class FakeBotSessionRepository implements BotSessionRepository {
   constructor(

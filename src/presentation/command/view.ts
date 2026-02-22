@@ -1,9 +1,8 @@
 import type { Command } from "commander";
-import type { InventorySkipReason } from "../../core/usecase/bot-inventory-query-service";
 import type {
-  BotInventoryViewResult,
-  BotInventoryViewService,
-} from "../../core/usecase/bot-inventory-view-service";
+  BotInventoryViewService
+} from "../../core/inventory/usecase/view";
+import type { BotInventoryViewResult, InventorySkipReason } from "../../core/inventory/type/usecase";
 import type { SteamAuthenticatedInventoryProvider } from "../../adapter/steam/steam-authenticated-inventory-provider";
 import { renderCliByBots } from "../cli";
 import { runTuiByBots } from "../tui";

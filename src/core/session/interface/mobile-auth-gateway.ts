@@ -1,10 +1,4 @@
-import type { SteamGuardPrompts } from "./steam-auth-gateway";
-
-export type SteamTwoFactorBootstrapResult = {
-  sharedSecret: string;
-  identitySecret: string;
-  revocationCode: string;
-};
+import type { SteamGuardPrompts, SteamTwoFactorBootstrapResult } from "../type/auth";
 
 export interface SteamMobileAuthGateway {
   enableAndFinalizeTwoFactor(input: {

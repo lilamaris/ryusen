@@ -10,13 +10,13 @@
 
 ## Owning Code Paths
 
-- `src/core/provider/inventory-provider.ts`
+- `src/core/inventory/interface/inventory-provider.ts`
   - `InventoryProvider`, `InventoryQuery`, `InventoryItem` contracts.
-- `src/core/port/bot-inventory-repository.ts`
+- `src/core/inventory/interface/inventory-repository.ts`
   - Holdings persistence and query port.
-- `src/core/usecase/bot-inventory-refresh-service.ts`
+- `src/core/inventory/usecase/refresh.ts`
   - Refresh orchestration (`refreshAll`).
-- `src/core/usecase/cluster-stock-service.ts`
+- `src/core/inventory/usecase/stock.ts`
   - Cluster stock aggregation (`getStock`).
 - `src/adapter/steam/steam-authenticated-inventory-provider.ts`
   - Steam inventory fetch adapter (public/auth cookie path).

@@ -1,11 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { debugLog } from "../../../debug";
-import type {
-  BotInventoryRepository,
-  BotInventoryWriteItem,
-  BotItemHolder,
-  BotSkuHolding,
-} from "../../../core/port/bot-inventory-repository";
+import type { BotInventoryRepository } from "../../../core/inventory/interface/inventory-repository";
+import type { BotInventoryWriteItem, BotItemHolder, BotSkuHolding } from "../../../core/inventory/type/holding";
 
 export class PrismaBotInventoryRepository implements BotInventoryRepository {
   constructor(private readonly prisma: PrismaClient) {}

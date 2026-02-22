@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { BotInventoryRepository, BotItemHolder, BotSkuHolding } from "../port/bot-inventory-repository";
-import { ClusterStockService } from "./cluster-stock-service";
+import type { BotInventoryRepository } from "../interface/inventory-repository";
+import type { BotItemHolder, BotSkuHolding } from "../type/holding";
+import { ClusterStockService } from "./stock";
 
 class FakeInventoryRepository implements BotInventoryRepository {
   constructor(private readonly holdings: BotSkuHolding[]) {}

@@ -3,8 +3,8 @@ import {
   type BotSession as PrismaBotSession,
 } from "@prisma/client";
 import { debugLog } from "../../../debug";
-import type { Bot, BotOnboardingState, BotSession } from "../../../core/bot/bot-session";
-import type { BotSessionRepository } from "../../../core/port/bot-session-repository";
+import type { Bot, BotOnboardingState, BotSession } from "../../../core/session/type/session";
+import type { BotSessionRepository } from "../../../core/session/interface/session-repository";
 
 type BotRecord = {
   id: string;

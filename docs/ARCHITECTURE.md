@@ -26,7 +26,7 @@ If your task spans multiple features, read all relevant module docs.
 
 ## System Boundaries
 
-- `core`: domain types, ports, use cases
+- `core`: feature-first modules (`session`, `inventory`, `trade`) with `type/`, `interface/`, `usecase/`
 - `adapter`: infrastructure implementations (Prisma, Steam)
 - `presentation`: CLI/TUI/Web command and rendering
 - `app/bootstrap.ts`: dependency wiring

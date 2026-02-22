@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BotSessionService } from "./bot-session-service";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { SteamAuthGateway, SteamGuardPrompts } from "../port/steam-auth-gateway";
-import type { Bot, BotOnboardingState, BotSession } from "../bot/bot-session";
-import type { SteamMobileAuthGateway } from "../port/steam-mobile-auth-gateway";
+import { BotSessionService } from "./session";
+import type { BotSessionRepository } from "../interface/session-repository";
+import type { SteamAuthGateway } from "../interface/auth-gateway";
+import type { SteamGuardPrompts } from "../type/auth";
+import type { Bot, BotOnboardingState, BotSession } from "../type/session";
+import type { SteamMobileAuthGateway } from "../interface/mobile-auth-gateway";
 
 class FakeRepository implements BotSessionRepository {
   public listBotsWithSessionsCalls = 0;

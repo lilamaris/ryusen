@@ -1,5 +1,6 @@
 import express from "express";
-import type { InventoryProvider, InventoryQuery } from "../../core/provider/inventory-provider";
+import type { InventoryProvider } from "../../core/inventory/interface/inventory-provider";
+import type { InventoryQuery } from "../../core/inventory/type/inventory";
 import { debugLog } from "../../debug";
 import { registerWebRoutes } from "./routes";
 

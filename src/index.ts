@@ -3,7 +3,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { createAppContext } from "./app/bootstrap";
 import { debugLog, setDebugEnabled } from "./debug";
-import type { DebugLogger } from "./core/usecase/debug-logger";
+import type { DebugLogger } from "./core/shared/type/debug-logger";
 import { registerBotCommands } from "./presentation/command/bot";
 import { registerLsCommands } from "./presentation/command/ls";
 import { registerViewCommands } from "./presentation/command/view";

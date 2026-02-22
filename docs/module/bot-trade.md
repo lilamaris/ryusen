@@ -9,11 +9,11 @@
 
 ## Owning Code Paths
 
-- `src/core/port/bot-trade-offer-gateway.ts`
+- `src/core/trade/interface/trade-offer-gateway.ts`
   - Contract that describes how to push a trade offer through Steam.
-- `src/core/usecase/bot-trade-service.ts`
+- `src/core/trade/usecase/trade.ts`
   - Core orchestration that resolves bots, gathers assets, resolves recipient trade token, and delegates to the trade gateway.
-- `src/core/usecase/bot-session-service.ts`
+- `src/core/session/usecase/session.ts`
   - `bot set-trade-token` 처리와 bot metadata 갱신.
 - `src/adapter/steam/steam-trade-offer-gateway.ts`
   - Steam implementation of the gateway that posts to `/tradeoffer/new/send`.

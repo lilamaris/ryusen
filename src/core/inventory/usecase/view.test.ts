@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { InventoryItem, InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
-import type { ResolveInventoryTargetsResult } from "./bot-inventory-query-service";
-import { BotInventoryViewService } from "./bot-inventory-view-service";
+import type { InventoryProvider } from "../interface/inventory-provider";
+import type { InventoryItem, InventoryQuery } from "../type/inventory";
+import type { ResolveInventoryTargetsResult } from "../type/usecase";
+import { BotInventoryViewService } from "./view";
 
 class FakeTargetResolver {
   public byNameResult: ResolveInventoryTargetsResult = { targets: [], skipped: [] };

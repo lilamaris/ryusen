@@ -1,5 +1,5 @@
 import { debugLog } from "../../debug";
-import type { BotTradeOfferGateway } from "../../core/port/bot-trade-offer-gateway";
+import type { BotTradeOfferGateway } from "../../core/trade/interface/trade-offer-gateway";
 
 const STEAM_ID64_BASE = BigInt("76561197960265728");
 

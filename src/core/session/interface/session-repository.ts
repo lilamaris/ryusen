@@ -1,4 +1,4 @@
-import type { Bot, BotOnboardingState, BotSession } from "../bot/bot-session";
+import type { Bot, BotOnboardingState, BotSession } from "../type/session";
 
 export interface BotSessionRepository {
   createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot>;

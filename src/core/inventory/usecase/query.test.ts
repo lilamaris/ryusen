@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BotInventoryQueryService } from "./bot-inventory-query-service";
-import type { Bot, BotSession } from "../bot/bot-session";
-import type { BotSessionRepository } from "../port/bot-session-repository";
+import { BotInventoryQueryService } from "./query";
+import type { Bot, BotSession } from "../../session/type/session";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
 
 class FakeRepository implements BotSessionRepository {
   constructor(

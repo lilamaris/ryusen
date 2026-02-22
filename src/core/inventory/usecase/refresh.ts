@@ -1,15 +1,9 @@
-import type { BotInventoryRepository } from "../port/bot-inventory-repository";
-import type { BotSessionRepository } from "../port/bot-session-repository";
-import type { InventoryProvider, InventoryQuery } from "../provider/inventory-provider";
-import type { DebugLogger } from "./debug-logger";
-
-export type RefreshAllResult = {
-  totalBots: number;
-  updatedBots: number;
-  skippedBots: number;
-  failedBots: number;
-  errors: Array<{ botName: string; reason: string }>;
-};
+import type { BotInventoryRepository } from "../interface/inventory-repository";
+import type { InventoryProvider } from "../interface/inventory-provider";
+import type { InventoryQuery } from "../type/inventory";
+import type { RefreshAllResult } from "../type/usecase";
+import type { BotSessionRepository } from "../../session/interface/session-repository";
+import type { DebugLogger } from "../../shared/type/debug-logger";
 
 export class BotInventoryRefreshService {
   constructor(

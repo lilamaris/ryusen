@@ -5,13 +5,13 @@ import { SteamSessionAuthGateway } from "../adapter/steam/steam-auth-gateway";
 import { SteamMobileTwoFactorGateway } from "../adapter/steam/steam-mobile-auth-gateway";
 import { SteamAuthenticatedInventoryProvider } from "../adapter/steam/steam-authenticated-inventory-provider";
 import { SteamTradeOfferGateway } from "../adapter/steam/steam-trade-offer-gateway";
-import { ClusterStockService } from "../core/usecase/cluster-stock-service";
-import { BotInventoryQueryService } from "../core/usecase/bot-inventory-query-service";
-import { BotInventoryRefreshService } from "../core/usecase/bot-inventory-refresh-service";
-import { BotInventoryViewService } from "../core/usecase/bot-inventory-view-service";
-import type { DebugLogger } from "../core/usecase/debug-logger";
-import { BotSessionService } from "../core/usecase/bot-session-service";
-import { BotTradeService } from "../core/usecase/bot-trade-service";
+import { ClusterStockService } from "../core/inventory/usecase/stock";
+import { BotInventoryQueryService } from "../core/inventory/usecase/query";
+import { BotInventoryRefreshService } from "../core/inventory/usecase/refresh";
+import { BotInventoryViewService } from "../core/inventory/usecase/view";
+import type { DebugLogger } from "../core/shared/type/debug-logger";
+import { BotSessionService } from "../core/session/usecase/session";
+import { BotTradeService } from "../core/trade/usecase/trade";
 
 export type AppContext = {
   prisma: PrismaClient;

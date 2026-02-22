@@ -1,9 +1,7 @@
 import type {
-  InventoryItem,
-  InventoryItemAsset,
   InventoryProvider,
-  InventoryQuery,
-} from "../../core/provider/inventory-provider";
+} from "../../core/inventory/interface/inventory-provider";
+import type { InventoryItem, InventoryItemAsset, InventoryQuery } from "../../core/inventory/type/inventory";
 import { debugLog } from "../../debug";
 import { toTf2Sku } from "./tf2-sku";
 
