@@ -1,7 +1,0 @@
-CREATE TYPE "BotOnboardingState" AS ENUM ('MANUAL_ONLY', 'AUTH_PENDING_CODE', 'ONBOARDING_LOCKED', 'AUTO_READY', 'FAILED');
-
-ALTER TABLE "Bot"
-ADD COLUMN "revocationCode" TEXT,
-ADD COLUMN "onboardingState" "BotOnboardingState" NOT NULL DEFAULT 'MANUAL_ONLY',
-ADD COLUMN "onboardingStartedAt" TIMESTAMP(3),
-ADD COLUMN "tradeLockedUntil" TIMESTAMP(3);

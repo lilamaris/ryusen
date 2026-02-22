@@ -121,7 +121,7 @@ DATABASE_URL="postgresql://ryusenbot@localhost:5432/ryusen?schema=public"
 
 ```bash
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:deploy
 ```
 
 - 새 스키마 변경으로 마이그레이션 파일을 **생성**할 때: `npm run prisma:migrate -- --name <migration-name>`
