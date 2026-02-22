@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SteamTradeOfferGateway } from "./steam-trade-offer-gateway";
+import { SteamTradeOfferGateway } from "./trade-offer-gateway";
 
 const originalFetch = globalThis.fetch;
 

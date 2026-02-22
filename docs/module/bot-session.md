@@ -20,11 +20,11 @@
   - Steam credential/guard auth port.
 - `src/core/session/usecase/session.ts`
   - Main session/secret sync use case orchestration.
-- `src/adapter/persistence/prisma/prisma-bot-session-repository.ts`
+- `src/adapter/prisma/session/session-repository.ts`
   - Prisma implementation for bot/session persistence.
-- `src/adapter/steam/steam-auth-gateway.ts`
+- `src/adapter/steam/session/auth-gateway.ts`
   - `steam-session` based auth gateway implementation.
-- `src/adapter/steam/steam-mobile-auth-gateway.ts`
+- `src/adapter/steam/session/mobile-auth-gateway.ts`
   - Mobile-app auth + `enableTwoFactor/finalizeTwoFactor` orchestration.
 - `src/presentation/command/bot.ts`
   - `bot create/connect/reauth/sync/sync-secrets/bootstrap-authenticator` command wiring.

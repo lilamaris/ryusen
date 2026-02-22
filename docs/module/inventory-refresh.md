@@ -18,11 +18,11 @@
   - Refresh orchestration (`refreshAll`).
 - `src/core/inventory/usecase/stock.ts`
   - Cluster stock aggregation (`getStock`).
-- `src/adapter/steam/steam-authenticated-inventory-provider.ts`
+- `src/adapter/steam/inventory/authenticated-inventory-provider.ts`
   - Steam inventory fetch adapter (public/auth cookie path).
-- `src/adapter/steam/tf2-sku.ts`
+- `src/adapter/steam/inventory/tf2-sku.ts`
   - SKU normalization helper.
-- `src/adapter/persistence/prisma/prisma-bot-inventory-repository.ts`
+- `src/adapter/prisma/inventory/inventory-repository.ts`
   - Prisma implementation for item/holding storage and SKU queries.
 - `src/presentation/command/bot.ts`
   - `bot refresh`, `bot watch` command wiring.

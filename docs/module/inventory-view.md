@@ -16,7 +16,7 @@
   - Fetches resolved targets and aggregates skipped/failures.
 - `src/core/inventory/interface/inventory-provider.ts`
   - Shared inventory provider contract.
-- `src/adapter/steam/steam-authenticated-inventory-provider.ts`
+- `src/adapter/steam/inventory/authenticated-inventory-provider.ts`
   - Concrete provider used by view flows.
 - `src/presentation/command/view.ts`
   - `view cli`, `view tui`, `view web` command wiring.

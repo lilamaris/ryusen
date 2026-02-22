@@ -1,13 +1,9 @@
-import { debugLog } from "../../debug";
-import type { BotTradeOfferGateway } from "../../core/trade/interface/trade-offer-gateway";
+import { debugLog } from "../../../debug";
+import type { BotTradeOfferGateway } from "../../../core/trade/interface/trade-offer-gateway";
+import type { SteamTradeOfferResponse } from "../type/steam-trade";
+import type { ParsedCookie, TradeOfferSendInput } from "../type/trade";
 
 const STEAM_ID64_BASE = BigInt("76561197960265728");
-
-type ParsedCookie = {
-  name: string;
-  value: string;
-  domain: string | null;
-};
 
 function parseCookie(cookie: string): ParsedCookie | null {
   const parts = cookie.split(";").map((part) => part.trim());
@@ -70,15 +66,6 @@ function toPartnerAccountId(steamId: string): string {
 
   return (steamId64 - STEAM_ID64_BASE).toString();
 }
-
-type TradeOfferSendInput = {
-  partnerParam: string;
-  partnerTradeToken?: string;
-  sessionId: string;
-  webCookies: string[];
-  assets: Parameters<BotTradeOfferGateway["createTradeOffer"]>[0]["assets"];
-  message?: string;
-};
 
 export class SteamTradeOfferGateway implements BotTradeOfferGateway {
   async createTradeOffer(input: {
@@ -200,7 +187,7 @@ export class SteamTradeOfferGateway implements BotTradeOfferGateway {
       return { ok: false, status: response.status, statusText: response.statusText };
     }
 
-    const body = (await response.json()) as { tradeofferid?: string; strError?: string };
+    const body = (await response.json()) as SteamTradeOfferResponse;
     if (!body.tradeofferid) {
       const message = body.strError ?? "Unknown error while creating trade offer";
       debugLog("SteamTradeOfferGateway", "createTradeOffer:failed", { message });

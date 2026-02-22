@@ -1,22 +1,4 @@
-type SteamDescriptionEntry = {
-  value?: string;
-};
-
-type SteamTag = {
-  category?: string;
-  internal_name?: string;
-  localized_tag_name?: string;
-  name?: string;
-};
-
-type SteamDescriptionLike = {
-  name?: string;
-  app_data?: {
-    def_index?: string;
-  };
-  tags?: SteamTag[];
-  descriptions?: SteamDescriptionEntry[];
-};
+import type { SteamDescriptionLike } from "../type/inventory";
 
 function slug(value: string): string {
   return value

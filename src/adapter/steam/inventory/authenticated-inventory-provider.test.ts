@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SteamAuthenticatedInventoryProvider } from "./steam-authenticated-inventory-provider";
+import { SteamAuthenticatedInventoryProvider } from "./authenticated-inventory-provider";
 
 const originalFetch = globalThis.fetch;
 

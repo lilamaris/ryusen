@@ -15,9 +15,9 @@
   - Core orchestration that resolves bots, gathers assets, resolves recipient trade token, and delegates to the trade gateway.
 - `src/core/session/usecase/session.ts`
   - `bot set-trade-token` 처리와 bot metadata 갱신.
-- `src/adapter/steam/steam-trade-offer-gateway.ts`
+- `src/adapter/steam/trade/trade-offer-gateway.ts`
   - Steam implementation of the gateway that posts to `/tradeoffer/new/send`.
-- `src/adapter/steam/steam-authenticated-inventory-provider.ts`
+- `src/adapter/steam/inventory/authenticated-inventory-provider.ts`
   - Supplies inventory data (with asset IDs) that the trade usecase needs to build offers.
 - `src/presentation/command/bot.ts`
   - `bot trade` wiring that parses CLI arguments and prints the offer summary/link.

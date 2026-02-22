@@ -27,7 +27,7 @@ If your task spans multiple features, read all relevant module docs.
 ## System Boundaries
 
 - `core`: feature-first modules (`session`, `inventory`, `trade`) with `type/`, `interface/`, `usecase/`
-- `adapter`: infrastructure implementations (Prisma, Steam)
+- `adapter`: infra-first modules (`steam`, `prisma`); each infra groups implementations by feature (`session`, `inventory`, `trade`)
 - `presentation`: CLI/TUI/Web command and rendering
 - `app/bootstrap.ts`: dependency wiring
 - `index.ts`: entrypoint and process lifecycle

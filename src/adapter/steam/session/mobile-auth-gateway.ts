@@ -3,31 +3,11 @@ import {
   EAuthTokenPlatformType,
   LoginSession,
 } from "steam-session";
-import { debugLog } from "../../debug";
-import type { SteamMobileAuthGateway } from "../../core/session/interface/mobile-auth-gateway";
-import type { SteamGuardPrompts, SteamTwoFactorBootstrapResult } from "../../core/session/type/auth";
-
-type StartSessionResponse = {
-  actionRequired: boolean;
-  validActions?: Array<{ type: EAuthSessionGuardType }>;
-};
-
-type SteamCommunityClient = {
-  steamID?: { getSteamID64(): string };
-  setMobileAppAccessToken(token: string): void;
-  enableTwoFactor(
-    callback: (
-      error: Error | null,
-      response?: {
-        shared_secret?: string;
-        identity_secret?: string;
-        revocation_code?: string;
-        phone_number_hint?: string;
-      }
-    ) => void
-  ): void;
-  finalizeTwoFactor(secret: string, activationCode: string, callback: (error: Error | null) => void): void;
-};
+import { debugLog } from "../../../debug";
+import type { SteamMobileAuthGateway } from "../../../core/session/interface/mobile-auth-gateway";
+import type { SteamGuardPrompts, SteamTwoFactorBootstrapResult } from "../../../core/session/type/auth";
+import type { SteamCommunityClient } from "../type/steam-community-client";
+import type { StartSessionResponse } from "../type/steam-auth";
 
 const SteamCommunityConstructor = require("steamcommunity") as new () => SteamCommunityClient;
 

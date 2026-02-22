@@ -1,44 +1,11 @@
 import type {
   InventoryProvider,
-} from "../../core/inventory/interface/inventory-provider";
-import type { InventoryItem, InventoryItemAsset, InventoryQuery } from "../../core/inventory/type/inventory";
-import { debugLog } from "../../debug";
+} from "../../../core/inventory/interface/inventory-provider";
+import type { InventoryItem, InventoryItemAsset, InventoryQuery } from "../../../core/inventory/type/inventory";
+import { debugLog } from "../../../debug";
+import type { SteamAsset, SteamDescription, SteamInventoryPage } from "../type/steam-inventory";
+import type { AggregatedItem } from "../type/inventory";
 import { toTf2Sku } from "./tf2-sku";
-
-type SteamAsset = {
-  classid: string;
-  instanceid: string;
-  assetid: string;
-  amount: string;
-};
-
-type SteamDescription = {
-  classid: string;
-  instanceid: string;
-  name: string;
-  market_hash_name?: string;
-  icon_url?: string;
-  app_data?: {
-    def_index?: string;
-  };
-  tags?: Array<{
-    category?: string;
-    internal_name?: string;
-    localized_tag_name?: string;
-    name?: string;
-  }>;
-  descriptions?: Array<{
-    value?: string;
-  }>;
-};
-
-type SteamInventoryPage = {
-  success: number;
-  assets?: SteamAsset[];
-  descriptions?: SteamDescription[];
-  more_items?: number;
-  last_assetid?: string;
-};
 
 function createDescriptionMap(descriptions: SteamDescription[]): Map<string, SteamDescription> {
   const map = new Map<string, SteamDescription>();
@@ -50,14 +17,6 @@ function createDescriptionMap(descriptions: SteamDescription[]): Map<string, Ste
 
 function toItems(assets: SteamAsset[], descriptions: SteamDescription[]): InventoryItem[] {
   const descriptionMap = createDescriptionMap(descriptions);
-  type AggregatedItem = {
-    quantity: number;
-  iconUrl?: string | undefined;
-    name: string;
-    marketHashName: string;
-    description: SteamDescription | null;
-    assetEntries: InventoryItemAsset[];
-  };
 
   const aggregated = new Map<string, AggregatedItem>();
 

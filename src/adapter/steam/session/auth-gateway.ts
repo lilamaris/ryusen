@@ -3,14 +3,10 @@ import {
   EAuthTokenPlatformType,
   LoginSession,
 } from "steam-session";
-import { debugLog } from "../../debug";
-import type { SteamAuthGateway } from "../../core/session/interface/auth-gateway";
-import type { SteamAuthResult, SteamGuardPrompts } from "../../core/session/type/auth";
-
-type StartSessionResponse = {
-  actionRequired: boolean;
-  validActions?: Array<{ type: EAuthSessionGuardType }>;
-};
+import { debugLog } from "../../../debug";
+import type { SteamAuthGateway } from "../../../core/session/interface/auth-gateway";
+import type { SteamAuthResult, SteamGuardPrompts } from "../../../core/session/type/auth";
+import type { StartSessionResponse } from "../type/steam-auth";
 
 function findCookieValue(cookies: string[], cookieName: string): string | null {
   for (const cookie of cookies) {

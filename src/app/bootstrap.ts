@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaBotInventoryRepository } from "../adapter/persistence/prisma/prisma-bot-inventory-repository";
-import { PrismaBotSessionRepository } from "../adapter/persistence/prisma/prisma-bot-session-repository";
-import { SteamSessionAuthGateway } from "../adapter/steam/steam-auth-gateway";
-import { SteamMobileTwoFactorGateway } from "../adapter/steam/steam-mobile-auth-gateway";
-import { SteamAuthenticatedInventoryProvider } from "../adapter/steam/steam-authenticated-inventory-provider";
-import { SteamTradeOfferGateway } from "../adapter/steam/steam-trade-offer-gateway";
+import { PrismaBotInventoryRepository } from "../adapter/prisma/inventory/inventory-repository";
+import { PrismaBotSessionRepository } from "../adapter/prisma/session/session-repository";
+import { SteamSessionAuthGateway } from "../adapter/steam/session/auth-gateway";
+import { SteamMobileTwoFactorGateway } from "../adapter/steam/session/mobile-auth-gateway";
+import { SteamAuthenticatedInventoryProvider } from "../adapter/steam/inventory/authenticated-inventory-provider";
+import { SteamTradeOfferGateway } from "../adapter/steam/trade/trade-offer-gateway";
 import { ClusterStockService } from "../core/inventory/usecase/stock";
 import { BotInventoryQueryService } from "../core/inventory/usecase/query";
 import { BotInventoryRefreshService } from "../core/inventory/usecase/refresh";

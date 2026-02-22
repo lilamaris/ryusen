@@ -3,7 +3,7 @@ import type {
   BotInventoryViewService
 } from "../../core/inventory/usecase/view";
 import type { BotInventoryViewResult, InventorySkipReason } from "../../core/inventory/type/usecase";
-import type { SteamAuthenticatedInventoryProvider } from "../../adapter/steam/steam-authenticated-inventory-provider";
+import type { SteamAuthenticatedInventoryProvider } from "../../adapter/steam/inventory/authenticated-inventory-provider";
 import { renderCliByBots } from "../cli";
 import { runTuiByBots } from "../tui";
 import { runWebServer } from "../web/server";
