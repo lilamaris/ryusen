@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaBotInventoryRepository } from "../adapter/prisma/inventory/inventory-repository";
+import { PrismaJobRepository } from "../adapter/prisma/job/job-repository";
 import { PrismaPriceCacheRepository } from "../adapter/prisma/pricing/price-cache-repository";
 import { PrismaBotSessionRepository } from "../adapter/prisma/session/session-repository";
 import { SteamSessionAuthGateway } from "../adapter/steam/session/auth-gateway";
@@ -11,6 +12,9 @@ import { ClusterStockService } from "../core/inventory/usecase/stock";
 import { BotInventoryQueryService } from "../core/inventory/usecase/query";
 import { BotInventoryRefreshService } from "../core/inventory/usecase/refresh";
 import { BotInventoryViewService } from "../core/inventory/usecase/view";
+import { JobService } from "../core/job/usecase/job";
+import { JobStateMachineService } from "../core/job/usecase/job-state-machine";
+import { JobWorkerService } from "../core/job/usecase/job-worker";
 import { MarketPriceService } from "../core/pricing/usecase/price";
 import type { DebugLogger } from "../core/shared/type/debug-logger";
 import { BotSessionService } from "../core/session/usecase/session";
@@ -21,7 +25,10 @@ export type AppContext = {
   steamProvider: SteamAuthenticatedInventoryProvider;
   botSessionRepository: PrismaBotSessionRepository;
   botInventoryRepository: PrismaBotInventoryRepository;
+  jobRepository: PrismaJobRepository;
   botSessionService: BotSessionService;
+  jobService: JobService;
+  jobWorkerService: JobWorkerService;
   botInventoryRefreshService: BotInventoryRefreshService;
   botInventoryQueryService: BotInventoryQueryService;
   botInventoryViewService: BotInventoryViewService;
@@ -37,6 +44,7 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
   const steamMobileAuthGateway = new SteamMobileTwoFactorGateway();
   const botSessionRepository = new PrismaBotSessionRepository(prisma);
   const botInventoryRepository = new PrismaBotInventoryRepository(prisma);
+  const jobRepository = new PrismaJobRepository(prisma);
   const priceCacheRepository = new PrismaPriceCacheRepository(prisma);
   const botSessionService = new BotSessionService(
     botSessionRepository,
@@ -66,13 +74,28 @@ export function createAppContext(debugLogger: DebugLogger): AppContext {
   );
   const backpackTfPricer = new BackpackTfPricer();
   const marketPriceService = new MarketPriceService([backpackTfPricer], priceCacheRepository, debugLogger);
+  const jobStateMachineService = new JobStateMachineService(jobRepository, debugLogger);
+  const jobService = new JobService(jobRepository, jobStateMachineService, debugLogger);
+  const jobWorkerService = new JobWorkerService(
+    jobRepository,
+    jobStateMachineService,
+    {
+      TRADE_OFFER_CREATE: async (payload) => {
+        await botTradeService.createOffer(payload);
+      },
+    },
+    debugLogger
+  );
 
   return {
     prisma,
     steamProvider,
     botSessionRepository,
     botInventoryRepository,
+    jobRepository,
     botSessionService,
+    jobService,
+    jobWorkerService,
     botInventoryRefreshService,
     botInventoryQueryService,
     botInventoryViewService,

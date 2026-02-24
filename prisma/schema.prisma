@@ -94,3 +94,52 @@ model BotSession {
 
   @@index([expiresAt])
 }
+
+enum JobType {
+  TRADE_OFFER_CREATE
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  RETRY_WAIT
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+model Job {
+  id               String          @id @default(cuid())
+  type             JobType
+  status           JobStatus       @default(PENDING)
+  payload          Json
+  attemptCount     Int             @default(0)
+  maxAttempts      Int
+  nextRunAt        DateTime
+  claimedBy        String?
+  claimExpiresAt   DateTime?
+  lastErrorCode    String?
+  lastErrorMessage String?
+  completedAt      DateTime?
+  canceledAt       DateTime?
+  transitions      JobTransition[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, nextRunAt])
+  @@index([type, status])
+}
+
+model JobTransition {
+  id            String    @id @default(cuid())
+  jobId         String
+  fromStatus    JobStatus
+  toStatus      JobStatus
+  reasonCode    String?
+  reasonMessage String?
+  actor         String
+  createdAt     DateTime  @default(now())
+  job           Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+}

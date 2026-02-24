@@ -5,6 +5,7 @@ import { createAppContext } from "./app/bootstrap";
 import { debugLog, setDebugEnabled } from "./debug";
 import type { DebugLogger } from "./core/shared/type/debug-logger";
 import { registerBotCommands } from "./presentation/command/bot";
+import { registerJobCommands } from "./presentation/command/job";
 import { registerLsCommands } from "./presentation/command/ls";
 import { registerViewCommands } from "./presentation/command/view";
 
@@ -71,6 +72,8 @@ const {
   botInventoryViewService,
   clusterStockService,
   botTradeService,
+  jobService,
+  jobWorkerService,
   marketPriceService,
 } = createAppContext(debugLogger);
 
@@ -89,6 +92,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
 });
 
 const bot = program.command("bot").description("Mutating bot operations");
+const job = program.command("job").description("Asynchronous job orchestration operations");
 const ls = program.command("ls").description("List resources");
 const view = program.command("view").description("Interactive and formatted inventory views");
 
@@ -99,6 +103,13 @@ registerBotCommands(bot, {
   runRefreshOnce,
   sleep,
   botTradeService,
+  jobService,
+});
+
+registerJobCommands(job, {
+  jobService,
+  jobWorkerService,
+  sleep,
 });
 
 registerLsCommands(ls, {

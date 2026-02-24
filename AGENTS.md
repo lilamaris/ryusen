@@ -68,3 +68,10 @@ Bug: repro + root cause + minimal fix + verification
 Detailed implementation rules: `docs/RULE.md`  
 Feature routing & boundaries: `docs/ARCHITECTURE.md`  
 Feature details and usage: `docs/module/*.md`
+
+## 5) Routing hints (repo-specific)
+
+- If request mentions job/worker/orchestration/retry/requeue/monitoring:
+  - Read `docs/module/job-orchestration.md` first (after ARCHITECTURE/RULE based on task type).
+- Priority implementation checklist for orchestration MVP:
+  - `docs/todo/priority1-job-orchestration-implementation-checklist.md`

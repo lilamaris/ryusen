@@ -20,7 +20,7 @@
 - `src/adapter/steam/inventory/authenticated-inventory-provider.ts`
   - Supplies inventory data (with asset IDs) that the trade usecase needs to build offers.
 - `src/presentation/command/bot.ts`
-  - `bot trade` wiring that parses CLI arguments and prints the offer summary/link.
+  - `bot trade` wiring that parses CLI arguments and supports immediate execution or async job enqueue.
 - `src/app/bootstrap.ts`
   - Instantiates the gateway and `BotTradeService`, making it available to the CLI.
 
@@ -42,6 +42,13 @@
 5. The assembled list of `TradeOfferAsset` entries plus metadata is sent to `SteamTradeOfferGateway.createTradeOffer`.
 6. The CLI prints a summary row and the generated Steam trade offer URL; manual acceptance remains the operator’s responsibility.
 
+### Flow: `bot trade --async`
+
+1. `bot trade` parses the same transfer input plus optional retry limit.
+2. Instead of direct Steam call, the command enqueues `TRADE_OFFER_CREATE` job.
+3. Job worker (`job worker`) later claims and executes the same trade orchestration.
+4. Operator monitors and controls status via `job list/inspect/retry/cancel`.
+
 ### Flow: `bot set-trade-token`
 
 1. `bot set-trade-token --name --token` receives token value.
@@ -61,7 +68,9 @@ npm run dev -- bot trade \
   --amount <count> \
   [--app-id 440] \
   [--context-id 2] \
-  [--message "Optional memo"]
+  [--message "Optional memo"] \
+  [--async] \
+  [--max-attempts 5]
 ```
 
 - `--from`: managed bot that owns the session/web cookies.
@@ -72,6 +81,7 @@ npm run dev -- bot trade \
 - `--to-trade-token` omitted 시 저장된 `to` 봇의 `tradeToken`을 자동 사용.
 - Defaults: `app-id` 440, `context-id` 2.
 - Output: table row with trade offer ID, source/target/sku/amount plus a printed offer URL.
+- `--async` 사용 시 즉시 오퍼 대신 job id/상태를 출력하고 worker가 나중에 실행.
 
 ### Register recipient trade token
 

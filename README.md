@@ -17,6 +17,7 @@
 - Steam Guard(OTP/확인 대기) 인터랙티브 처리
 - YAML 기반 다중 봇 일괄 동기화 (`bot sync`)
 - YAML 기반 secret 동기화 (`bot sync-secrets`)
+- `bot sync` 결과를 `succeeded/partial/failed`로 구분 출력
 - Authenticator bootstrap 및 onboarding lock 상태 관리
 - bot별 backpack.tf access token 저장 (`bot set-backpack-token`)
 - 세션/봇 상태 조회 (`ls bots`, `ls sessions`)
@@ -59,6 +60,17 @@
 
 관련 문서: `docs/module/pricing.md`
 
+### 6) Job Orchestration / Worker Monitoring
+
+- 비동기 job 모델(`Job`, `JobTransition`) 기반 작업 추적
+- 상태 전이(`PENDING/RUNNING/RETRY_WAIT/COMPLETED/FAILED/CANCELED`) 기록
+- worker 실행 루프(`claim -> execute -> complete/retry/fail`)
+- 운영 명령(`job list`, `job inspect`, `job retry`, `job cancel`, `job worker`)
+- 실패 원인 전용 조회 명령(`job fail-reason`)
+- trade enqueue 명령(`job enqueue-trade`) 및 `bot trade --async` 연동
+
+관련 문서: `docs/module/job-orchestration.md`
+
 ## 표현 계층 (WebUI / CLI / TUI)
 
 - CLI: 운영 명령 실행 및 테이블 출력
@@ -86,6 +98,17 @@ npm run dev -- <command>
 - `bot refresh [--app-id 440] [--context-id 2]`
 - `bot watch [--app-id 440] [--context-id 2] [--interval-seconds 120]`
 - `bot trade --from --to --sku --amount [--to-trade-token] [--app-id 440] [--context-id 2] [--message]`
+- `bot trade --from --to --sku --amount [--to-trade-token] [--app-id 440] [--context-id 2] [--message] [--async] [--max-attempts 5]`
+
+### `job` 그룹
+
+- `job enqueue-trade --from --to --sku --amount [--to-trade-token] [--app-id 440] [--context-id 2] [--message] [--max-attempts 5]`
+- `job list [--status PENDING] [--type TRADE_OFFER_CREATE] [--limit 50]`
+- `job inspect --id <job-id> [--transition-limit 20]`
+- `job fail-reason --id <job-id>`
+- `job retry --id <job-id> [--reason ...]`
+- `job cancel --id <job-id> [--reason ...]`
+- `job worker [--worker-id worker-1] [--limit 10] [--lease-ms 30000] [--once] [--interval-seconds 5]`
 
 ### `ls` 그룹
 
@@ -145,7 +168,7 @@ npm run dev -- view web --port 3000
 - [x] item price provider 연동
 - [ ] 가격 기반 자동 Listing 생성
 - [ ] incoming trade 자동 승낙/거절 판단 엔진
-- [ ] 거래/리스팅 오케스트레이션 및 작업 추적
+- [x] 거래/리스팅 오케스트레이션 및 작업 추적
 - [ ] 운영 대시보드 고도화(상태 모니터링/알림)
 
 ## 문서 구조

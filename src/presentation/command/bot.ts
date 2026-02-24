@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import type { JobService } from "../../core/job/usecase/job";
 import type { BotTradeService } from "../../core/trade/usecase/trade";
 import type { BotSessionService } from "../../core/session/usecase/session";
 import type { SteamGuardPrompts } from "../../core/session/type/auth";
@@ -34,6 +35,8 @@ type BotTradeOptions = {
   appId: string;
   contextId: string;
   message?: string;
+  async?: boolean;
+  maxAttempts: string;
 };
 
 type BotTradeTokenOptions = {
@@ -62,6 +65,7 @@ type RegisterBotCommandDeps = {
   runRefreshOnce: (options: BotRefreshOptions) => Promise<void>;
   sleep: (ms: number) => Promise<void>;
   botTradeService: BotTradeService;
+  jobService: JobService;
 };
 
 export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps): void {
@@ -184,6 +188,7 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
         {
           total: result.total,
           succeeded: result.succeeded,
+          partial: result.partial,
           failed: result.failed,
         },
       ]);
@@ -243,6 +248,8 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
     .option("--app-id <appId>", "App ID", "440")
     .option("--context-id <contextId>", "Context ID", "2")
     .option("--message <message>", "Optional message for the trade offer")
+    .option("--async", "Enqueue job instead of immediate execution")
+    .option("--max-attempts <maxAttempts>", "Used with --async", "5")
     .action(async (options: BotTradeOptions) => {
       const tradeInput = {
         fromBotName: options.from,
@@ -254,6 +261,28 @@ export function registerBotCommands(bot: Command, deps: RegisterBotCommandDeps):
         amount: Number(options.amount),
         ...(options.message ? { message: options.message } : {}),
       };
+
+      if (options.async) {
+        const maxAttempts = Number(options.maxAttempts);
+        if (!Number.isInteger(maxAttempts) || maxAttempts <= 0) {
+          throw new Error("--max-attempts must be a positive integer");
+        }
+        const created = await deps.jobService.enqueueTradeOffer({
+          payload: tradeInput,
+          maxAttempts,
+        });
+        console.table([
+          {
+            jobId: created.id,
+            type: created.type,
+            status: created.status,
+            nextRunAt: created.nextRunAt.toISOString(),
+            maxAttempts: created.maxAttempts,
+          },
+        ]);
+        return;
+      }
+
       const result = await deps.botTradeService.createOffer(tradeInput);
 
       console.table([
