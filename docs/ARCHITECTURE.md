@@ -24,6 +24,9 @@ Detailed behavior, flow, and CLI usage live in module docs.
 - External market pricing
   - Module doc: `docs/module/pricing.md`
   - Main commands: `ls price`
+- Listing automation policy
+  - Module doc: `docs/module/listing-automation.md`
+  - Main commands: `listing policy set`, `listing policy list`, `listing policy disable`
 - Job orchestration and worker monitoring
   - Module doc: `docs/module/job-orchestration.md`
   - Main commands: `job enqueue-trade`, `job list`, `job inspect`, `job fail-reason`, `job retry`, `job cancel`, `job worker`
@@ -32,8 +35,8 @@ If your task spans multiple features, read all relevant module docs.
 
 ## System Boundaries
 
-- `core`: feature-first modules (`session`, `inventory`, `trade`, `pricing`, `job`) with `type/`, `interface/`, `usecase/`
-- `adapter`: infra-first modules (`steam`, `prisma`, `backpack`); each infra groups implementations by feature (`session`, `inventory`, `trade`, `pricing`, `job`)
+- `core`: feature-first modules (`session`, `inventory`, `trade`, `pricing`, `listing`, `job`) with `type/`, `interface/`, `usecase/`
+- `adapter`: infra-first modules (`steam`, `prisma`, `backpack`); each infra groups implementations by feature (`session`, `inventory`, `trade`, `pricing`, `listing`, `job`)
 - `presentation`: CLI/TUI/Web command and rendering
 - `app/bootstrap.ts`: dependency wiring
 - `index.ts`: entrypoint and process lifecycle

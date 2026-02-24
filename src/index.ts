@@ -6,6 +6,7 @@ import { debugLog, setDebugEnabled } from "./debug";
 import type { DebugLogger } from "./core/shared/type/debug-logger";
 import { registerBotCommands } from "./presentation/command/bot";
 import { registerJobCommands } from "./presentation/command/job";
+import { registerListingCommands } from "./presentation/command/listing";
 import { registerLsCommands } from "./presentation/command/ls";
 import { registerViewCommands } from "./presentation/command/view";
 
@@ -74,6 +75,7 @@ const {
   botTradeService,
   jobService,
   jobWorkerService,
+  listingPolicyService,
   marketPriceService,
 } = createAppContext(debugLogger);
 
@@ -93,6 +95,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
 
 const bot = program.command("bot").description("Mutating bot operations");
 const job = program.command("job").description("Asynchronous job orchestration operations");
+const listing = program.command("listing").description("Listing automation policy operations");
 const ls = program.command("ls").description("List resources");
 const view = program.command("view").description("Interactive and formatted inventory views");
 
@@ -110,6 +113,10 @@ registerJobCommands(job, {
   jobService,
   jobWorkerService,
   sleep,
+});
+
+registerListingCommands(listing, {
+  listingPolicyService,
 });
 
 registerLsCommands(ls, {

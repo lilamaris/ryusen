@@ -73,5 +73,9 @@ Feature details and usage: `docs/module/*.md`
 
 - If request mentions job/worker/orchestration/retry/requeue/monitoring:
   - Read `docs/module/job-orchestration.md` first (after ARCHITECTURE/RULE based on task type).
+- If request mentions listing policy/auto listing/listing strategy:
+  - Read `docs/module/listing-automation.md` first (after ARCHITECTURE/RULE based on task type).
 - Priority implementation checklist for orchestration MVP:
   - `docs/todo/priority1-job-orchestration-implementation-checklist.md`
+- Priority implementation checklist for listing MVP:
+  - `docs/todo/priority2-listing-implementation-checklist.md`

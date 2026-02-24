@@ -71,6 +71,14 @@
 
 관련 문서: `docs/module/job-orchestration.md`
 
+### 7) Listing Automation Policy
+
+- listing 전략 입력(정책) 저장/수정 (`listing policy set`)
+- 정책 조회 (`listing policy list`)
+- 정책 비활성화 (`listing policy disable`)
+
+관련 문서: `docs/module/listing-automation.md`
+
 ## 표현 계층 (WebUI / CLI / TUI)
 
 - CLI: 운영 명령 실행 및 테이블 출력
@@ -109,6 +117,12 @@ npm run dev -- <command>
 - `job retry --id <job-id> [--reason ...]`
 - `job cancel --id <job-id> [--reason ...]`
 - `job worker [--worker-id worker-1] [--limit 10] [--lease-ms 30000] [--once] [--interval-seconds 5]`
+
+### `listing` 그룹
+
+- `listing policy set --sku <sku> --min-margin-bps <bps> --max-exposure <amount> --target-bot-name <bot> [--source backpack.tf] [--app-id 440] [--context-id 2]`
+- `listing policy list [--source backpack.tf] [--enabled|--disabled]`
+- `listing policy disable --sku <sku> --target-bot-name <bot> [--source backpack.tf] [--app-id 440] [--context-id 2]`
 
 ### `ls` 그룹
 
