@@ -15,11 +15,13 @@ export type BotTradeSecretsDeclaration = {
 export type BotSyncResult = {
   total: number;
   succeeded: number;
+  partial: number;
   failed: number;
   rows: Array<{
     alias: string;
     steamId: string;
-    status: "ok" | "error";
+    status: "ok" | "partial" | "error";
+    stage: "validation" | "identity" | "session";
     message: string;
   }>;
 };

@@ -24,6 +24,20 @@ export class BotSessionService {
     this.debugLogger?.("BotSessionService", message, meta);
   }
 
+  private classifySyncAuthFailure(reason: string): "otp_required" | "otp_rejected" | "confirmation_wait" | "unknown" {
+    const text = reason.toLowerCase();
+    if (text.includes("guard") || text.includes("otp") || text.includes("2fa") || text.includes("two-factor")) {
+      if (text.includes("invalid") || text.includes("rejected") || text.includes("incorrect")) {
+        return "otp_rejected";
+      }
+      return "otp_required";
+    }
+    if (text.includes("confirm") || text.includes("approval") || text.includes("pending")) {
+      return "confirmation_wait";
+    }
+    return "unknown";
+  }
+
   async registerBot(input: { name: string; steamId: string; accountName: string }): Promise<void> {
     this.debug("registerBot:start", {
       name: input.name,
@@ -244,22 +258,47 @@ export class BotSessionService {
     prompts: SteamGuardPrompts;
     secretsBySteamId?: Record<string, BotTradeSecretsDeclaration>;
   }): Promise<BotSyncResult> {
+    this.debug("syncBotsFromDeclaration:start", {
+      totalAccounts: input.accounts.length,
+      hasSecretsDeclaration: Boolean(input.secretsBySteamId),
+    });
+
     const rows: BotSyncResult["rows"] = [];
     let succeeded = 0;
+    let partial = 0;
+    let failed = 0;
 
     for (const item of input.accounts) {
+      const startedAt = Date.now();
       const alias = item.alias.trim();
       const steamId = item.steamId.trim();
       const accountName = item.account.trim();
       const password = item.password.trim();
+      let identitySynced = false;
+
+      this.debug("syncBotsFromDeclaration:rowStart", {
+        alias,
+        steamId,
+        accountName,
+      });
 
       if (!alias || !steamId || !accountName || !password) {
+        this.debug("syncBotsFromDeclaration:validationFailed", {
+          alias: item.alias,
+          steamId: item.steamId,
+          hasAlias: Boolean(alias),
+          hasSteamId: Boolean(steamId),
+          hasAccountName: Boolean(accountName),
+          hasPassword: Boolean(password),
+        });
         rows.push({
           alias: item.alias,
           steamId: item.steamId,
           status: "error",
+          stage: "validation",
           message: "alias, steamId, account, password are required",
         });
+        failed += 1;
         continue;
       }
 
@@ -268,6 +307,12 @@ export class BotSessionService {
           alias,
           steamId,
           accountName,
+        });
+        identitySynced = true;
+        this.debug("syncBotsFromDeclaration:identitySynced", {
+          alias,
+          steamId,
+          botId: bot.id,
         });
 
         const secrets = input.secretsBySteamId?.[steamId];
@@ -279,7 +324,17 @@ export class BotSessionService {
               ? {}
               : { onboardingState: "AUTO_READY", tradeLockedUntil: null }),
           });
+          this.debug("syncBotsFromDeclaration:secretsSyncedFromDeclaration", {
+            alias,
+            steamId,
+            hasSharedSecret: Boolean(secrets.sharedSecret?.trim()),
+            hasIdentitySecret: Boolean(secrets.identitySecret?.trim()),
+          });
         } else if (!bot.sharedSecret && this.steamMobileAuthGateway) {
+          this.debug("syncBotsFromDeclaration:bootstrapAuthenticator:start", {
+            alias,
+            steamId,
+          });
           const bootstrapResult = await this.bootstrapTradeAuthenticator({
             botName: bot.name,
             password,
@@ -292,6 +347,11 @@ export class BotSessionService {
           bot = (await this.repository.findBotBySteamId(steamId)) ?? bot;
         }
 
+        this.debug("syncBotsFromDeclaration:sessionAuth:start", {
+          alias,
+          steamId,
+          accountName,
+        });
         const authResult = await this.steamAuthGateway.authenticateWithCredentials({
           accountName,
           password,
@@ -309,28 +369,73 @@ export class BotSessionService {
           webCookies: authResult.webCookies,
           expiresAt: authResult.expiresAt,
         });
+        this.debug("syncBotsFromDeclaration:sessionAuth:done", {
+          alias,
+          steamId,
+          botId: bot.id,
+          expiresAt: authResult.expiresAt.toISOString(),
+          durationMs: Date.now() - startedAt,
+        });
 
         rows.push({
           alias,
           steamId,
           status: "ok",
+          stage: "session",
           message: `session updated (expires ${authResult.expiresAt.toISOString()})`,
         });
         succeeded += 1;
       } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        if (identitySynced) {
+          const failureType = this.classifySyncAuthFailure(reason);
+          this.debug("syncBotsFromDeclaration:sessionAuth:failedAfterIdentity", {
+            alias,
+            steamId,
+            failureType,
+            reason,
+            durationMs: Date.now() - startedAt,
+          });
+          rows.push({
+            alias,
+            steamId,
+            status: "partial",
+            stage: "session",
+            message: `identity/secrets synced, but session auth failed: ${reason}`,
+          });
+          partial += 1;
+          continue;
+        }
+
+        this.debug("syncBotsFromDeclaration:identityFailed", {
+          alias,
+          steamId,
+          reason,
+          durationMs: Date.now() - startedAt,
+        });
         rows.push({
           alias,
           steamId,
           status: "error",
-          message: error instanceof Error ? error.message : String(error),
+          stage: "identity",
+          message: reason,
         });
+        failed += 1;
       }
     }
+
+    this.debug("syncBotsFromDeclaration:summary", {
+      total: input.accounts.length,
+      succeeded,
+      partial,
+      failed,
+    });
 
     return {
       total: input.accounts.length,
       succeeded,
-      failed: input.accounts.length - succeeded,
+      partial,
+      failed,
       rows,
     };
   }

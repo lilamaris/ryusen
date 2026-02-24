@@ -90,7 +90,7 @@
   - optionally stores `sharedSecret`/`identitySecret`.
   - authenticates each account and upserts session cookies/expiry.
   - each Steam Guard prompt includes current account metadata box so operator can identify which bot needs OTP.
-4. CLI prints per-bot sync result rows and summary counts.
+4. CLI prints per-bot sync result rows and summary counts (`succeeded`, `partial`, `failed`).
 
 ### Flow: `bot sync-secrets`
 
@@ -205,6 +205,10 @@ npm run dev -- ls sessions --name <bot-name>
   - `bot sync-secrets` fails per row when steamId is not registered.
 - Auth guard actions:
   - Device/email OTP and confirmation-wait are handled interactively.
+- Sync result classification:
+  - `ok`: identity/secrets + session 인증 모두 성공
+  - `partial`: identity/secrets 저장은 성공했지만 session 인증 실패
+  - `error`: validation/identity 단계에서 실패
 - Session validity:
   - Expired/missing session is not auto-renewed; operator runs `bot reauth`.
 - Trade automation readiness:

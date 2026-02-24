@@ -472,9 +472,112 @@ void test("syncBotsFromDeclaration creates bots, applies secrets, and updates se
   });
 
   assert.equal(result.succeeded, 1);
+  assert.equal(result.partial, 0);
+  assert.equal(result.failed, 0);
   assert.equal(repository.bots.length, 1);
   assert.equal(repository.bots[0]?.sharedSecret, "shared");
   assert.equal(repository.sessions.length, 1);
+});
+
+void test("syncBotsFromDeclaration reports partial when identity is saved but session auth fails", async () => {
+  class PartialSyncRepository implements BotSessionRepository {
+    public bots: Bot[] = [];
+
+    async createBot(input: { name: string; steamId: string; accountName: string }): Promise<Bot> {
+      const bot: Bot = {
+        id: `bot-${this.bots.length + 1}`,
+        name: input.name,
+        steamId: input.steamId,
+        accountName: input.accountName,
+        tradeToken: null,
+      };
+      this.bots.push(bot);
+      return bot;
+    }
+
+    async findBotByName(name: string): Promise<Bot | null> {
+      return this.bots.find((bot) => bot.name === name) ?? null;
+    }
+
+    async findBotBySteamId(steamId: string): Promise<Bot | null> {
+      return this.bots.find((bot) => bot.steamId === steamId) ?? null;
+    }
+
+    async updateBotIdentity(input: { botId: string; name: string; accountName: string }): Promise<Bot> {
+      const bot = this.bots.find((item) => item.id === input.botId);
+      if (!bot) {
+        throw new Error("not found");
+      }
+      bot.name = input.name;
+      bot.accountName = input.accountName;
+      return bot;
+    }
+
+    listBots(): Promise<Bot[]> {
+      return Promise.resolve(this.bots);
+    }
+
+    listBotsWithSessions(): Promise<Array<{ bot: Bot; session: BotSession | null }>> {
+      return Promise.resolve([]);
+    }
+
+    upsertSession(): Promise<BotSession> {
+      return Promise.reject(new Error("auth should fail before session upsert"));
+    }
+
+    findSessionByBotId(): Promise<BotSession | null> {
+      return Promise.resolve(null);
+    }
+
+    markSessionChecked(): Promise<void> {
+      return Promise.resolve();
+    }
+
+    setBotTradeToken(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    setBotTradeSecretsBySteamId(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+
+    setBotOnboardingState(): Promise<Bot> {
+      return Promise.reject(new Error("not used"));
+    }
+  }
+
+  class FailingAuthGateway implements SteamAuthGateway {
+    authenticateWithCredentials(): Promise<never> {
+      return Promise.reject(new Error("otp required but not available"));
+    }
+  }
+
+  const repository = new PartialSyncRepository();
+  const service = new BotSessionService(repository, new FailingAuthGateway());
+
+  const result = await service.syncBotsFromDeclaration({
+    accounts: [
+      {
+        alias: "alpha",
+        steamId: "76561198000000001",
+        account: "alpha_acc",
+        password: "pw1",
+      },
+    ],
+    prompts: {
+      requestGuardCode: () => Promise.resolve(""),
+      notifyPendingConfirmation: () => Promise.resolve(),
+    },
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.succeeded, 0);
+  assert.equal(result.partial, 1);
+  assert.equal(result.failed, 0);
+  assert.equal(result.rows[0]?.status, "partial");
+  assert.equal(result.rows[0]?.stage, "session");
+  assert.match(result.rows[0]?.message ?? "", /identity\/secrets synced, but session auth failed/);
+  assert.equal(repository.bots.length, 1);
 });
 
 void test("syncBotSecretsFromDeclaration updates only registered bots", async () => {
